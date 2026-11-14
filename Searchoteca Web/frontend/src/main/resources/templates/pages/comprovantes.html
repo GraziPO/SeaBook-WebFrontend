@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- SAÍDAS / COMPROVANTES: consulta pelo código. Venda reimprime no formato de cupom (térmica). -->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Comprovantes', active='saidas/comprovantes',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='SAÍDAS / COMPROVANTES', title='Comprovantes', actions=~{})}"></div>
+
+    <form th:action="@{/saidas/comprovantes}" method="get" class="search-hero no-print" role="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+        <input type="search" name="codigo" th:value="${codigo}" aria-label="Código do comprovante"
+               placeholder="Código do comprovante, ex.: CMP-20261107-000042">
+        <button type="submit" class="btn-solid">Buscar</button>
+    </form>
+
+    <th:block th:if="${comprovante != null and comprovante.exitType() == 'SALE'}">
+        <div th:replace="~{components/receipt :: saleReceipt(${comprovante})}"></div>
+    </th:block>
+    <th:block th:if="${comprovante != null and comprovante.exitType() != 'SALE'}">
+        <div class="form-card form-card-wide">
+            <div th:replace="~{components/receipt :: receipt(${comprovante})}"></div>
+        </div>
+    </th:block>
+
+    <th:block th:if="${comprovante == null}">
+        <div th:replace="~{components/ui :: empty(title='Informe o código do comprovante', text='O código está impresso no comprovante, ex.: CMP-20261107-000042.')}"></div>
+    </th:block>
+</section>
+</body>
+</html>

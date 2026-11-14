@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  ETIQUETA DO EXEMPLAR (modelo novo): título, "ID · DEPARTAMENTO / LOCAL", código de barras e o código
+  em texto, uma vez só. Na impressão, cada etiqueta ocupa uma página do tamanho da etiqueta
+  (fila única vertical), que é como a impressora térmica de etiquetas trabalha.
+  O tamanho fica em app.css (--label-w e --label-h) e o @page "etiqueta" usa o mesmo valor.
+-->
+<div th:fragment="label(e)" class="copy-label">
+    <div class="copy-label-title" th:text="${e.title()}" th:title="${e.title()}">Vidas Secas</div>
+    <div class="copy-label-meta" th:text="|ID ${e.copyId()} · ${e.departCode()} / ${e.localCode()}|">ID 743 · CIE / D1</div>
+    <svg class="barcode" th:attr="data-code=${e.code()}" role="img" th:aria-label="|Código de barras ${e.code()}|"></svg>
+    <div class="copy-label-code" th:text="${e.code()}">151616565615CIED13</div>
+</div>
+
+</body>
+</html>

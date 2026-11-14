@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  LISTA DE LEITURA: um campo de uma linha + a lista para conferir antes de confirmar (js/scan.js).
+  Usada na baixa, na doação, na venda, no empréstimo, na movimentação e na reimpressão de etiquetas.
+
+    <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares',
+                        submit='id', expect='AVAILABLE', price=false)}"></div>
+
+  name    nome do campo enviado (os valores vão um por linha, como no textarea de antes)
+  submit  'id' envia o ID do exemplar; 'code' envia o código da etiqueta (a movimentação usa o código)
+  expect  situações aceitas, separadas por vírgula ('' aceita qualquer uma)
+  price   mostra o preço de venda de cada exemplar e o total
+-->
+<div th:fragment="scanList(name, label, submit, expect, price)" class="field-full scan-field" data-scan
+     th:data-scan-submit="${submit}" th:data-scan-expect="${expect}"
+     th:attr="data-scan-price=${price ? 'true' : null}"
+     th:data-scan-lookup="@{/exemplares/consulta}">
+
+    <label th:for="${'scan-' + name}" th:text="${label}">Exemplares</label>
+    <div class="scan-input-row">
+        <svg class="scan-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5v14M7 5v14M11 5v14M14 5v14M18 5v14M21 5v14"></path></svg>
+        <input th:id="${'scan-' + name}" type="text" data-scan-input autocomplete="off" spellcheck="false"
+               placeholder="Escaneie a etiqueta ou digite o código e tecle Enter">
+        <button type="button" class="btn-outline btn-small" data-scan-add>Adicionar</button>
+    </div>
+    <div class="scan-feedback" data-scan-feedback aria-live="polite"></div>
+
+    <table class="scan-table" hidden>
+        <thead>
+        <tr>
+            <th>Código</th>
+            <th>Livro</th>
+            <th>Situação</th>
+            <th class="num" th:if="${price}">Valor</th>
+            <th><span class="visually-hidden">Remover</span></th>
+        </tr>
+        </thead>
+        <tbody data-scan-rows></tbody>
+    </table>
+    <div class="scan-empty" data-scan-empty>Nenhum exemplar lido ainda.</div>
+    <div class="scan-summary" data-scan-summary></div>
+
+    <!-- o que vai para o servidor: só as linhas conferidas, uma por linha -->
+    <input type="hidden" th:name="${name}" data-scan-value>
+</div>
+
+</body>
+</html>

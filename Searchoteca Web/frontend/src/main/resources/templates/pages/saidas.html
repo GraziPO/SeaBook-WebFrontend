@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!--
+  SAÍDAS / SAÍDAS: doação e baixa. A venda saiu daqui e tem aba própria (pages/vendas.html);
+  a consulta de comprovantes virou o submenu "Comprovantes" (pages/comprovantes.html).
+  Os exemplares entram pela lista de leitura (components/scan.html), não mais por um textarea.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Saídas', active='saidas/registro',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='SAÍDAS', title='Saídas', actions=~{})}"></div>
+
+    <p class="page-intro">
+        Doação e baixa tiram o exemplar do acervo de vez, e cada uma gera um comprovante com código próprio.
+        Vendas ficam na aba <a th:href="@{/vendas}">Vendas</a>; empréstimos, em <a th:href="@{/emprestimos}">Empréstimos</a>.
+    </p>
+
+    <div class="option-grid">
+        <article class="option-card" th:each="t : ${tipos}">
+            <div class="option-icon" th:switch="${t.key()}" aria-hidden="true">
+                <svg th:case="'DONATION'" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.8 1-1.1a5.5 5.5 0 0 0 0-7.7z"></path></svg>
+                <svg th:case="*" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+            </div>
+            <h2 class="option-title" th:text="${t.label()}">Baixa</h2>
+            <p class="option-text" th:text="${t.description()}">Descrição</p>
+            <button type="button" class="btn-solid"
+                    data-open-modal="modal-saida"
+                    th:data-title="|Registrar ${#strings.toLowerCase(t.label())}|"
+                    th:data-hint="${t.hint()}"
+                    th:data-required="${t.notesRequired()} ? 'notes' : ''"
+                    th:data-f-type="${t.key()}"
+                    data-submit-label="Confirmar saída"
+                    th:text="|Registrar ${#strings.toLowerCase(t.label())}|">Registrar baixa</button>
+        </article>
+    </div>
+</section>
+
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-saida', title='Registrar saída', body=~{::exitForm})}"></dialog>
+
+    <!-- comprovante recém-emitido -->
+    <th:block th:if="${comprovante != null}">
+        <dialog th:replace="~{components/modal :: modal(id='modal-comprovante', title='Comprovante de saída', body=~{components/receipt :: receipt(${comprovante})})}"></dialog>
+        <button type="button" hidden data-auto-open data-open-modal="modal-comprovante"></button>
+    </th:block>
+
+    <!-- depois de um erro: reabre com a mesma lista -->
+    <button type="button" hidden data-auto-open th:if="${reabrir != null}"
+            data-open-modal="modal-saida"
+            th:data-title="|Registrar ${#strings.toLowerCase(reabrir.option().label())}|"
+            th:data-hint="${reabrir.option().hint()}"
+            th:data-required="${reabrir.option().notesRequired()} ? 'notes' : ''"
+            data-submit-label="Confirmar saída"
+            th:data-f-type="${reabrir.option().key()}"
+            th:data-f-copy-ids="${reabrir.copyIds()}"
+            th:data-f-notes="${reabrir.notes()}"></button>
+</th:block>
+
+<form th:fragment="exitForm" th:action="@{/saidas}" method="post" class="data-form">
+    <input type="hidden" name="type">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <p class="field-full modal-hint" data-modal-hint></p>
+
+    <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares',
+                        submit='id', expect='AVAILABLE', price=false)}"></div>
+
+    <div class="field-full">
+        <label for="saida-obs">Observações</label>
+        <textarea id="saida-obs" name="notes" rows="3" data-required-toggle
+                  placeholder="Na baixa, informe o motivo (ex.: danificado, extraviado)"></textarea>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Confirmar saída</button>
+    </div>
+</form>
+
+</body>
+</html>

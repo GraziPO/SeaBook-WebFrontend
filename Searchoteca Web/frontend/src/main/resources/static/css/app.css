@@ -1,0 +1,509 @@
+/*
+ * Versão nova: casca fixa (topo e menu não rolam com a página) + componentes e modais.
+ * O style.css continua sendo a base visual (cores, botões, tabelas, formulários).
+ */
+
+/* ---------- casca fixa ---------- */
+.app .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.app .sidebar {
+    position: sticky;
+    top: 72px;
+    height: calc(100vh - 72px);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.app .sidebar-item { padding: 20px 24px; }
+
+.sidebar-sub {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.12);
+    padding: 6px 0;
+}
+
+.sidebar-sub a {
+    color: #F3D9D6;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 10px 24px 10px 58px;
+}
+
+.sidebar-sub a:hover,
+.sidebar-sub a.active {
+    color: #fff;
+    background: var(--color-sidebar-active);
+}
+
+.app .content {
+    min-width: 0;   /* tabelas largas rolam dentro do conteúdo, não a página inteira */
+}
+
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* ---------- cabeçalho de tela ---------- */
+.page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.page-head .page-title { margin-bottom: 0; }
+
+.page-head-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.panel-soft {
+    background: #fff;
+    border: 1px solid #F0DCD3;
+    border-radius: 10px;
+    padding: 20px 28px;
+    max-width: 760px;
+    line-height: 1.6;
+}
+
+/* ---------- cartões de opção (tipos de saída) ---------- */
+.option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    max-width: 960px;
+}
+
+.option-card {
+    background: #fff;
+    border: 1px solid #F0DCD3;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #FBEDE9;
+    color: var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.option-title {
+    font-family: var(--font-serif);
+    color: var(--color-accent);
+    font-size: 22px;
+    margin: 4px 0 0;
+}
+
+.option-text {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 8px;
+    flex: 1;
+}
+
+.option-card .btn-solid { align-self: flex-start; }
+
+/* ---------- modal ---------- */
+.modal {
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    width: min(720px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    box-shadow: 0 24px 64px rgba(43, 35, 32, 0.28);
+    color: var(--color-text);
+}
+
+.modal.modal-sm { width: min(460px, calc(100vw - 32px)); }
+
+.modal::backdrop { background: rgba(43, 35, 32, 0.45); }
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 28px;
+    border-bottom: 1px solid #F1E5DE;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
+}
+
+.modal-title {
+    font-family: var(--font-serif);
+    color: var(--color-accent);
+    font-size: 22px;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.modal-close:hover { background: #FBEDE9; color: var(--color-accent); }
+
+.modal-body { padding: 24px 28px 28px; }
+
+.modal-body .alert { max-width: none; margin-bottom: 0; }
+
+.modal-message { margin: 0 0 20px; line-height: 1.5; }
+
+.modal-hint {
+    margin: 0;
+    padding: 12px 14px;
+    background: #FBF3EE;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-danger {
+    background: #8E1B1B;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger:hover { background: #6E1414; }
+
+button:disabled { opacity: 0.6; cursor: wait; }
+
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* comprovante dentro do modal */
+.modal .receipt { border: none; padding: 0; max-width: none; }
+.receipt-meta { text-align: right; }
+.receipt-table { margin-top: 16px; }
+.receipt-notes { margin-top: 16px; }
+
+/* ---------- impressão: com um modal aberto, só ele sai no papel ---------- */
+@media print {
+    body.app:has(dialog[open]) > *:not(dialog[open]) { display: none !important; }
+    dialog[open] {
+        position: static;
+        box-shadow: none;
+        width: auto;
+        max-height: none;
+        border-radius: 0;
+    }
+    dialog::backdrop { display: none; }
+    .modal-close, .no-print { display: none !important; }
+}
+
+/* ---------- telas estreitas ---------- */
+@media (max-width: 860px) {
+    .app .sidebar { position: static; height: auto; }
+    .sidebar-sub { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .sidebar-sub a { padding: 10px 16px; }
+    .modal-header, .modal-body { padding-left: 18px; padding-right: 18px; }
+}
+
+/* rótulos fora da grade de detalhes (ex.: observações do comprovante) */
+.receipt-notes .detail-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+}
+
+/* no celular, "Alterar senha" continua visível (agora é um modal, não uma página) */
+@media (max-width: 860px) {
+    .app .topbar-link.link-button { display: inline; }
+}
+
+
+/* =====================================================================
+   PROPOSTA: busca, lista de leitura, cupom térmico e etiquetas
+   ===================================================================== */
+
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.form-card-wide { max-width: 960px; }
+
+/* botão "Fechar" dos comprovantes só faz sentido dentro do modal */
+main [data-close-modal] { display: none; }
+
+/* ---------- busca grande (consulta do acervo, comprovantes) ---------- */
+.search-hero {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #E7D6CE;
+    border-radius: 10px;
+    padding: 8px 8px 8px 18px;
+    max-width: 760px;
+    margin-bottom: 24px;
+    color: var(--color-text-muted);
+}
+
+.search-hero input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    height: 44px;
+    background: transparent;
+    color: var(--color-text);
+}
+
+.row-link { color: var(--color-accent); font-weight: 600; text-decoration: none; }
+.row-link:hover { text-decoration: underline; }
+
+.filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-tabs a {
+    padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px;
+    background: #fff; border: 1px solid #F0DCD3; color: var(--color-text);
+}
+.filter-tabs a.active { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+
+/* ---------- lista de leitura (components/scan.html + js/scan.js) ---------- */
+.scan-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-input-bg);
+    border: 1px solid #C9D3DB;
+    border-radius: 8px;
+    padding: 4px 6px 4px 14px;
+}
+
+.scan-input-row:focus-within {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(122, 22, 32, 0.15);
+}
+
+.scan-icon { color: var(--color-text-muted); flex-shrink: 0; }
+
+.data-form .scan-input-row input {
+    border: none;
+    background: transparent;
+    height: 40px;
+    padding: 0;
+    font-size: 15px;
+    font-family: ui-monospace, Consolas, monospace;
+    outline: none;
+}
+
+.scan-feedback { min-height: 20px; font-size: 13px; margin: 6px 2px; color: var(--color-text-muted); }
+.scan-feedback.ok { color: #1E7A3E; }
+.scan-feedback.warn { color: #B45309; }
+
+.scan-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #F1E5DE;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.scan-table th {
+    background: #FBF3EE;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    padding: 8px 12px;
+}
+
+.scan-table th.num { text-align: right; }
+.scan-table td { padding: 8px 12px; border-top: 1px solid #F1E5DE; vertical-align: middle; }
+.scan-table td:first-child { width: 190px; }
+.scan-table td:last-child { width: 44px; text-align: right; }
+
+.data-form .scan-table input.scan-code {
+    height: 34px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid transparent;
+    padding: 0 8px;
+}
+
+.data-form .scan-table input.scan-code:hover,
+.data-form .scan-table input.scan-code:focus { border-color: #C9D3DB; }
+
+.scan-row.error { background: #FDF0EF; }
+.scan-row.error .scan-code { color: #7A1620; }
+.scan-row-msg { color: #8E1B1B; font-size: 12px; font-weight: 600; margin-top: 2px; }
+.scan-row.flash { animation: scan-flash 0.8s ease; }
+@keyframes scan-flash { from { background: #FFF1C2; } to { background: transparent; } }
+
+.scan-remove {
+    width: 30px; height: 30px; border-radius: 6px; border: none; cursor: pointer;
+    background: transparent; color: var(--color-text-muted); font-size: 20px; line-height: 1;
+}
+.scan-remove:hover { background: #F8D9D6; color: #7A1620; }
+
+.scan-empty {
+    border: 1.5px dashed #E7C9C2;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+.scan-summary { margin-top: 8px; font-size: 14px; font-weight: 600; text-align: right; }
+.scan-summary.warn { color: #B45309; }
+
+/* ---------- cupom de venda (impressora térmica, rolo de 80 mm) ---------- */
+.thermal-wrap { display: flex; flex-direction: column; align-items: center; }
+
+.thermal-receipt {
+    width: 72mm;                   /* área útil do rolo de 80 mm */
+    background: #fff;
+    color: #000;
+    font-family: ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 6mm 4mm;
+    border: 1px dashed #C9B3AA;    /* só na tela */
+}
+
+.thermal-receipt * { font-family: inherit; }  /* o style.css põe Inter em tudo; o cupom é monoespaçado */
+.t-center { text-align: center; }
+.t-strong { font-weight: 700; }
+.t-big { font-size: 14px; }
+.t-small { font-size: 10px; }
+.t-mono { font-family: inherit; }
+.t-row { display: flex; justify-content: space-between; gap: 8px; }
+.t-row span:last-child { text-align: right; white-space: nowrap; }
+.t-rule { border-top: 1px dashed #000; margin: 6px 0; }
+.t-item { margin-bottom: 4px; }
+
+/* ---------- etiquetas (impressora térmica de etiquetas) ---------- */
+.label-roll {
+    display: flex;
+    flex-direction: column;      /* fila única vertical */
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.copy-label {
+    --label-w: 60mm;
+    --label-h: 30mm;
+    width: var(--label-w);
+    height: var(--label-h);
+    box-sizing: border-box;
+    padding: 2.5mm 3mm;
+    background: #fff;
+    color: #000;
+    border: 1px dashed #C9B3AA;  /* só na tela */
+    border-radius: 2mm;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.copy-label-title {
+    font-weight: 700;
+    font-size: 10pt;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.copy-label-meta { font-size: 7.5pt; margin-bottom: 1.5mm; }
+
+.copy-label svg.barcode {
+    height: 11mm;
+    max-width: 100%;
+    display: block;
+    margin: 0 auto;
+    shape-rendering: crispEdges;  /* barras sem borda borrada */
+}
+
+.copy-label-code {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 8pt;
+    text-align: center;
+    letter-spacing: 0.04em;
+    margin-top: 0.8mm;
+}
+
+/* ---------- impressão térmica ---------- */
+@page etiqueta { size: 60mm 30mm; margin: 0; }
+@page cupom { margin: 0; }
+
+@media print {
+    /* etiquetas: uma por página, do tamanho da etiqueta (a página inteira usa o formato da etiqueta) */
+    body:has(.label-roll) { page: etiqueta; }
+    .app .content, .app .page-wrapper { padding: 0 !important; margin: 0; min-height: 0; }
+    .label-roll { display: block; }
+    .copy-label { page: etiqueta; break-after: page; border: none; border-radius: 0; margin: 0; }
+    .copy-label:last-child { break-after: auto; }
+
+    /* cupom: só o cupom, encostado no topo, na largura do rolo */
+    body.print-thermal dialog[open] { page: cupom; padding: 0; }
+    /* o modal sai do centro da tela e encosta no topo do papel */
+    dialog[open] {
+        position: absolute !important;
+        inset: 0 auto auto 0 !important;
+        margin: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        outline: none !important;
+    }
+    body.print-thermal .modal-header { display: none; }
+    body.print-thermal .modal-body { padding: 0; }
+    .thermal-wrap { align-items: flex-start; }
+    .thermal-receipt { border: none; padding: 2mm 4mm; }
+}
+
+/* cupom impresso fora de modal (reimpressão em Saídas > Comprovantes) */
+@media print {
+    body.print-thermal .content section > :not(.thermal-wrap) { display: none !important; }
+    body.print-thermal .thermal-wrap { page: cupom; }
+}
