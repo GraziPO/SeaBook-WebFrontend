@@ -623,7 +623,7 @@ button.sidebar-item {
 .sidebar-sub button:hover { color: #fff; background: var(--color-sidebar-active); }
 .sidebar-sub[hidden] { display: none; }
 
-/* sem a faixa "Searchoteca": o título da tela abre o conteúdo */
+/* sem a faixa "SeaBook": o título da tela abre o conteúdo */
 .app .content { padding-top: 32px; }
 
 /* ---------- área do aluno ---------- */
@@ -789,3 +789,7 @@ button.sidebar-item {
     .dash-mini, .dash-stats { grid-template-columns: 1fr; }
     .filter-bar-actions { margin-left: 0; }
 }
+
+/* ---------- logo (imagem) ---------- */
+.topbar .logo { display: flex; align-items: center; }
+.topbar .logo img { display: block; height: 38px; width: auto; }

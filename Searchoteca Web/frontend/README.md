@@ -1,4 +1,4 @@
-# Searchoteca — frontend (versão nova)
+# SeaBook — frontend (versão nova)
 
 Versão reorganizada do frontend: **a casca da aplicação é fixa** (topo, menu lateral, fundo) e o
 conteúdo das telas usa **componentes e modais**, em vez de uma página separada para cada formulário.
