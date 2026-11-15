@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--
+  RELATÓRIOS / LOGS: trilha de auditoria (audit:view, só root), com filtros e exportação em CSV.
+  A exportação usa os mesmos filtros, traz até 500 registros e também fica registrada na auditoria.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Logs', active='relatorios/logs',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='RELATÓRIOS / LOGS', title='Logs', actions=~{::exportButton})}"></div>
+
+    <form th:action="@{/relatorios/auditoria}" method="get" class="filter-bar">
+        <div>
+            <label for="log-usuario">Usuário</label>
+            <input id="log-usuario" type="text" name="usuario" th:value="${filtro.usuario()}" placeholder="ex.: maria.op">
+        </div>
+        <div>
+            <label for="log-acao">Ação</label>
+            <select id="log-acao" name="acao">
+                <option value="">Todas</option>
+                <option th:each="a : ${acoes}" th:value="${a}" th:text="${a}"
+                        th:selected="${a == filtro.acao()}">CREATE</option>
+            </select>
+        </div>
+        <div>
+            <label for="log-de">De</label>
+            <input id="log-de" type="date" name="de" th:value="${filtro.de()}">
+        </div>
+        <div>
+            <label for="log-ate">Até</label>
+            <input id="log-ate" type="date" name="ate" th:value="${filtro.ate()}">
+        </div>
+        <div>
+            <label for="log-limite">Mostrar</label>
+            <select id="log-limite" name="limite">
+                <option th:each="n : ${limites}" th:value="${n}" th:text="|${n} registros|"
+                        th:selected="${n == filtro.limite()}">100 registros</option>
+            </select>
+        </div>
+        <div class="filter-bar-actions">
+            <a th:href="@{/relatorios/auditoria}" class="btn-outline">Limpar</a>
+            <button type="submit" class="btn-solid">Filtrar</button>
+        </div>
+    </form>
+
+    <p class="hint" th:unless="${#lists.isEmpty(logs)}"
+       th:text="|${#lists.size(logs)} registros, do mais recente para o mais antigo.|">100 registros</p>
+
+    <table class="data-table" th:unless="${#lists.isEmpty(logs)}">
+        <thead><tr><th>Data e hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead>
+        <tbody>
+        <tr th:each="l : ${logs}">
+            <td class="nowrap" th:text="${l.timeStamp() != null} ? ${#temporals.format(l.timeStamp(), 'dd/MM/yyyy HH:mm:ss')} : '—'">13/11/2026 10:30:00</td>
+            <td class="mono" th:text="${l.username() ?: 'sistema'}">root</td>
+            <td><span class="mono action-tag" th:text="${l.action()}">UPDATE</span></td>
+            <td class="log-details" th:text="${l.details()}">livro;9788501002448;título: A -> B</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <th:block th:if="${#lists.isEmpty(logs)}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum registro encontrado', text='Mude os filtros ou limpe a busca.')}"></div>
+    </th:block>
+</section>
+
+<a th:fragment="exportButton" th:href="@{${exportUrl}}" class="btn-outline"
+   title="Até 500 registros, com os filtros da tela">Exportar CSV</a>
+</body>
+</html>

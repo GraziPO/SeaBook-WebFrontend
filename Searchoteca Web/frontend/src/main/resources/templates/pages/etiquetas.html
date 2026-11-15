@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--
+  ETIQUETAS: fila única vertical, uma etiqueta por página do tamanho da etiqueta.
+  O tamanho é escolhido aqui e o layout se adapta (js/labels.js).
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Etiquetas', active='acervo/exemplares',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <div class="no-print">
+        <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / EXEMPLARES / ETIQUETAS', title=${titulo}, actions=~{::printButton})}"></div>
+        <form th:replace="~{components/labels :: sizePicker}"></form>
+        <p class="hint">Na janela de impressão, escolha a impressora térmica, margens "Nenhuma" e escala 100%.
+            O papel já vai no tamanho escolhido acima, uma etiqueta por página.</p>
+        <div class="alert alert-error" data-label-warn hidden></div>
+    </div>
+
+    <div class="label-roll" th:if="${not #lists.isEmpty(etiquetas)}">
+        <th:block th:each="e : ${etiquetas}">
+            <div th:replace="~{components/labels :: label(${e})}"></div>
+        </th:block>
+    </div>
+
+    <th:block th:if="${#lists.isEmpty(etiquetas)}">
+        <div th:replace="~{components/ui :: empty(title='Nenhuma etiqueta para imprimir', text='Leia os exemplares em Exemplares > Reimprimir etiquetas.')}"></div>
+    </th:block>
+</section>
+
+<button th:fragment="printButton" type="button" class="btn-solid" data-print
+        th:if="${not #lists.isEmpty(etiquetas)}">Imprimir etiquetas</button>
+</body>
+</html>

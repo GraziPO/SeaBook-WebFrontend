@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!--
+  ACERVO / LIVROS: lista + um modal para cadastrar/editar (com busca por ISBN na Open Library)
+  + um modal pequeno para o preço de venda (só root, com vendas ligadas).
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Livros', active='acervo/livros',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / LIVROS', title='Livros', actions=~{::headActions})}"></div>
+
+    <th:block th:if="${not #lists.isEmpty(pagina.content())}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Título</th>
+                <th>ISBN</th>
+                <th>Editora</th>
+                <th>Ano</th>
+                <th>Gênero</th>
+                <th class="num" th:if="${vendasAtivas}">Preço</th>
+                <th th:if="${nav.manageArchive()}">Ações</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="b : ${pagina.content()}">
+                <td><strong th:text="${b.title}">Vidas Secas</strong><div class="muted" th:text="${b.author}">Graciliano Ramos</div></td>
+                <td class="mono" th:text="${b.isbn}">9788501002448</td>
+                <td th:text="${b.publisher}">Record</td>
+                <td th:text="${b.rel_year}">1938</td>
+                <td th:text="${b.genre}">Romance</td>
+                <td class="num" th:if="${vendasAtivas}"
+                    th:text="${b.salePrice != null} ? |R$ ${#numbers.formatDecimal(b.salePrice, 1, 'POINT', 2, 'COMMA')}| : '—'">R$ 35,00</td>
+                <td class="actions-cell" th:if="${nav.manageArchive()}">
+                    <button type="button" class="btn-edit" data-open-modal="modal-livro"
+                            th:data-form-action="@{/acervo/livros/{i}/editar(i=${b.isbn})}"
+                            data-title="Editar livro" data-submit-label="Salvar" data-readonly="isbn"
+                            th:data-f-isbn="${b.isbn}" th:data-f-title="${b.title}" th:data-f-author="${b.author}"
+                            th:data-f-rel_year="${b.rel_year}" th:data-f-publisher="${b.publisher}"
+                            th:data-f-genre="${b.genre}">Editar</button>
+                    <button type="button" class="btn-toggle" th:if="${nav.editPrice() and vendasAtivas}"
+                            data-open-modal="modal-preco"
+                            th:data-form-action="@{/acervo/livros/{i}/preco(i=${b.isbn})}"
+                            th:data-title="|Preço de venda: ${b.title}|"
+                            th:data-f-sale-price="${b.salePrice}">Preço</button>
+                    <button type="button" class="btn-delete" data-open-modal="modal-confirmar"
+                            th:data-form-action="@{/acervo/livros/{i}/excluir(i=${b.isbn})}"
+                            data-title="Excluir livro" data-submit-label="Excluir"
+                            th:data-message="|Excluir ${b.title}? Só é possível se ele não tiver exemplares cadastrados.|">Excluir</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url='/acervo/livros')}"></nav>
+    </th:block>
+
+    <th:block th:if="${#lists.isEmpty(pagina.content())}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum livro cadastrado', text='Cadastre o primeiro livro pelo ISBN.')}"></div>
+    </th:block>
+</section>
+
+<button th:fragment="headActions" type="button" class="btn-solid" th:if="${nav.manageArchive()}"
+        data-open-modal="modal-livro" th:data-form-action="@{/acervo/livros}"
+        data-title="Cadastrar livro" data-submit-label="Cadastrar">+ Cadastrar livro</button>
+
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-livro', title='Cadastrar livro', body=~{::bookForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-preco', title='Preço de venda', body=~{::priceForm})}"></dialog>
+</th:block>
+
+<form th:fragment="bookForm" method="post" th:action="@{/acervo/livros}" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div class="field-full">
+        <label for="livro-isbn">ISBN</label>
+        <div class="input-with-button">
+            <input id="livro-isbn" type="text" name="isbn" required maxlength="17" autocomplete="off"
+                   placeholder="Leia o código de barras do livro ou digite o ISBN">
+            <button type="button" class="btn-outline" th:data-isbn-lookup="@{/acervo/livros/isbn}">Buscar dados</button>
+        </div>
+        <div class="isbn-status" data-isbn-status hidden></div>
+    </div>
+    <div class="field-full">
+        <label for="livro-titulo">Título</label>
+        <input id="livro-titulo" type="text" name="title" required maxlength="100">
+    </div>
+    <div>
+        <label for="livro-autor">Autor</label>
+        <input id="livro-autor" type="text" name="author" required maxlength="100">
+    </div>
+    <div>
+        <label for="livro-editora">Editora</label>
+        <input id="livro-editora" type="text" name="publisher" maxlength="50">
+    </div>
+    <div>
+        <label for="livro-ano">Ano</label>
+        <input id="livro-ano" type="number" name="rel_year" min="1400" max="2100">
+    </div>
+    <div>
+        <label for="livro-genero">Gênero</label>
+        <input id="livro-genero" type="text" name="genre" maxlength="50">
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Cadastrar</button>
+    </div>
+</form>
+
+<form th:fragment="priceForm" method="post" action="#" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div class="field-full">
+        <label for="livro-preco">Preço (R$)</label>
+        <input id="livro-preco" type="number" name="salePrice" min="0" step="0.01" placeholder="ex.: 35,00">
+        <div class="hint">Deixe vazio para tirar o livro da venda. O valor vale para todos os exemplares.</div>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Salvar preço</button>
+    </div>
+</form>
+
+</body>
+</html>

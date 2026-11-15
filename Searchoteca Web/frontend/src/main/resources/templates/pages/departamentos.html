@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+  ACERVO / DEPARTAMENTOS
+  Antes: home_depart.html (lista) + search_depart.html (formulário de incluir/editar).
+  Agora: uma tela só. Incluir e editar usam o MESMO modal; excluir usa a confirmação global.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Departamentos', active='acervo/departamentos',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<!-- ===================================================================== miolo da tela -->
+<section th:fragment="content">
+
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / DEPARTAMENTOS', title='Departamentos', actions=~{::headActions})}"></div>
+
+    <th:block th:if="${not #lists.isEmpty(pagina.content())}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th th:if="${nav.manageArchive()}">Ações</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="d : ${pagina.content()}">
+                <td class="mono" th:text="${d.departCode}">EXA</td>
+                <td th:text="${d.departName}">Exatas</td>
+                <td th:text="${d.departDesc}">Bloco B</td>
+                <td class="actions-cell" th:if="${nav.manageArchive()}">
+                    <!-- editar: abre o modal já preenchido; o código não muda -->
+                    <button type="button" class="btn-edit"
+                            data-open-modal="modal-departamento"
+                            th:data-form-action="@{/acervo/departamentos/{c}/editar(c=${d.departCode})}"
+                            data-title="Editar departamento" data-submit-label="Salvar"
+                            data-readonly="departCode"
+                            th:data-f-depart-code="${d.departCode}"
+                            th:data-f-depart-name="${d.departName}"
+                            th:data-f-depart-desc="${d.departDesc}">Editar</button>
+                    <!-- excluir: confirmação global do layout -->
+                    <button type="button" class="btn-delete"
+                            data-open-modal="modal-confirmar"
+                            th:data-form-action="@{/acervo/departamentos/{c}/excluir(c=${d.departCode})}"
+                            data-title="Excluir departamento" data-submit-label="Excluir"
+                            th:data-message="|Excluir o departamento ${d.departCode} (${d.departName})? Só é possível se ele não tiver localizações nem exemplares.|">Excluir</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url='/acervo/departamentos')}"></nav>
+    </th:block>
+
+    <th:block th:if="${#lists.isEmpty(pagina.content())}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum departamento cadastrado', text='Inclua o primeiro departamento para começar.')}"></div>
+    </th:block>
+</section>
+
+<!-- botão do cabeçalho -->
+<button th:fragment="headActions" type="button" class="btn-solid" th:if="${nav.manageArchive()}"
+        data-open-modal="modal-departamento"
+        th:data-form-action="@{/acervo/departamentos}"
+        data-title="Incluir departamento" data-submit-label="Incluir">+ Incluir departamento</button>
+
+
+<!-- ===================================================================== modais da tela -->
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-departamento', title='Incluir departamento', body=~{::departmentForm})}"></dialog>
+
+    <!-- depois de um erro, reabre o modal com o que a pessoa tinha digitado -->
+    <button type="button" hidden data-auto-open th:if="${reabrir != null}"
+            data-open-modal="modal-departamento"
+            th:data-form-action="${reabrir.action()}"
+            th:data-title="${reabrir.title()}"
+            th:data-submit-label="${reabrir.submitLabel()}"
+            th:data-readonly="${reabrir.editing()} ? 'departCode' : ''"
+            th:data-f-depart-code="${reabrir.department().departCode}"
+            th:data-f-depart-name="${reabrir.department().departName}"
+            th:data-f-depart-desc="${reabrir.department().departDesc}"></button>
+</th:block>
+
+<!-- formulário único: incluir e editar (o modal troca título, action e botão) -->
+<form th:fragment="departmentForm" method="post" th:action="@{/acervo/departamentos}" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div>
+        <label for="dep-codigo">Código</label>
+        <input id="dep-codigo" type="text" name="departCode" required maxlength="20" autocomplete="off">
+    </div>
+    <div>
+        <label for="dep-nome">Nome</label>
+        <input id="dep-nome" type="text" name="departName" required maxlength="100">
+    </div>
+    <div class="field-full">
+        <label for="dep-descricao">Descrição</label>
+        <textarea id="dep-descricao" name="departDesc" rows="4"></textarea>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Incluir</button>
+    </div>
+</form>
+
+</body>
+</html>

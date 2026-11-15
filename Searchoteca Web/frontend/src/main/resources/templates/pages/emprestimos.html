@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<!--
+  EMPRÉSTIMOS: lista + dois modais com a lista de leitura:
+   - Novo empréstimo: RA do aluno + exemplares (aceita disponível ou reservado para ele)
+   - Devolução: só exemplares emprestados; o controller devolve um por um no backend
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Empréstimos', active='emprestimos',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='EMPRÉSTIMOS', title='Empréstimos', actions=~{::headActions})}"></div>
+
+    <div class="filter-tabs">
+        <a th:href="@{/emprestimos}" th:classappend="${status == ''} ? 'active'">Todos</a>
+        <a th:href="@{/emprestimos(status='OPEN')}" th:classappend="${status == 'OPEN'} ? 'active'">Em dia</a>
+        <a th:href="@{/emprestimos(status='OVERDUE')}" th:classappend="${status == 'OVERDUE'} ? 'active'">Atrasados</a>
+        <a th:href="@{/emprestimos(status='CLOSED')}" th:classappend="${status == 'CLOSED'} ? 'active'">Devolvidos</a>
+        <a th:href="@{/emprestimos(status='CANCELLED')}" th:classappend="${status == 'CANCELLED'} ? 'active'">Cancelados</a>
+    </div>
+
+    <table class="data-table" th:if="${not #lists.isEmpty(pagina.content())}">
+        <thead>
+        <tr><th>Nº</th><th>Aluno</th><th>Retirada</th><th>Devolução prevista</th><th class="num">Livros</th><th>Situação</th><th>Ações</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="l : ${pagina.content()}">
+            <td class="mono" th:text="${l.loanId()}">128</td>
+            <td>
+                <span th:text="${l.studentName()}">Ana Lima</span>
+                <div class="muted" th:if="${l.ra() != null}" th:text="|RA ${l.ra()}|">RA 2026001</div>
+            </td>
+            <td th:text="${#temporals.format(l.loanDate(), 'dd/MM/yyyy')}">01/11/2026</td>
+            <td th:text="${#temporals.format(l.dueDate(), 'dd/MM/yyyy')}">16/11/2026</td>
+            <td class="num">
+                <span th:text="${l.items()}">2</span>
+                <div class="muted" th:if="${l.open() and l.openItems() < l.items()}"
+                     th:text="|${l.openItems()} a devolver|">1 a devolver</div>
+            </td>
+            <td><span class="status-pill" th:classappend="${l.pillClass()}" th:text="${l.statusLabel()}">Aberto</span></td>
+            <td class="actions-cell">
+                <button type="button" class="btn-delete" th:if="${l.cancellable()}"
+                        data-open-modal="modal-confirmar"
+                        th:data-form-action="@{/emprestimos/{id}/cancelar(id=${l.loanId()})}"
+                        data-title="Cancelar empréstimo" data-submit-label="Cancelar empréstimo"
+                        th:data-message="|Cancelar o empréstimo ${l.loanId()} de ${l.studentName()}? Use só para corrigir um registro feito por engano: os exemplares voltam para o acervo.|">Cancelar</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <th:block th:if="${#lists.isEmpty(pagina.content())}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum empréstimo aqui', text='Registre um empréstimo em + Novo empréstimo.')}"></div>
+    </th:block>
+    <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url=${paginaUrl})}"></nav>
+</section>
+
+<th:block th:fragment="headActions">
+    <button type="button" class="btn-outline" data-open-modal="modal-devolucao">Registrar devolução</button>
+    <button type="button" class="btn-solid" data-open-modal="modal-emprestimo">+ Novo empréstimo</button>
+</th:block>
+
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-emprestimo', title='Novo empréstimo', body=~{::loanForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-devolucao', title='Registrar devolução', body=~{::returnForm})}"></dialog>
+</th:block>
+
+<form th:fragment="loanForm" th:action="@{/emprestimos}" method="post" class="data-form">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div class="field-full">
+        <label for="emp-ra">RA do aluno</label>
+        <input id="emp-ra" type="text" name="ra" required autocomplete="off" placeholder="Leia a carteirinha ou digite o RA">
+    </div>
+    <div th:replace="~{components/scan :: scanList(name='items', label='Exemplares',
+                        submit='code', expect='AVAILABLE,RESERVED', price=false)}"></div>
+    <p class="field-full hint"
+       th:text="|Prazo de devolução: ${prazoDias} dias. Limite: ${limiteLivros} livros com o aluno ao mesmo tempo.${bloqueiaAtraso ? ' Aluno com livro atrasado não pode pegar outro.' : ''}|">
+        Prazo de devolução: 15 dias. Limite: 5 livros por aluno.</p>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Registrar empréstimo</button>
+    </div>
+</form>
+
+<form th:fragment="returnForm" th:action="@{/emprestimos/devolucao}" method="post" class="data-form">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares devolvidos',
+                        submit='code', expect='LOANED', price=false)}"></div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Confirmar devolução</button>
+    </div>
+</form>
+
+</body>
+</html>

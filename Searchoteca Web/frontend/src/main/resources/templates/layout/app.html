@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+  CASCA FIXA DA APLICAÇÃO: topo, menu lateral, faixa, mensagens e os modais globais.
+  Toda tela interna usa este arquivo e só fornece o próprio conteúdo:
+
+    <html th:replace="~{layout/app :: page(
+            title='Departamentos',           (aba do navegador)
+            active='acervo/departamentos',   (item marcado no menu)
+            content=~{::content},            (o miolo da tela)
+            modals=~{::modals})}">           (modais da tela, ou ~{} se não tiver)
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-br" th:fragment="page(title, active, content, modals)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' - Searchoteca'">Searchoteca</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="app">
+
+<header th:replace="~{layout/parts :: topbar}"></header>
+
+<div class="page-wrapper">
+    <nav th:replace="~{layout/parts :: sidebar(${active})}"></nav>
+
+    <main class="content">
+        <div class="alert alert-error" th:if="${erro}" th:text="${erro}"></div>
+        <div class="alert alert-info" th:if="${info}" th:text="${info}"></div>
+
+        <th:block th:replace="${content}"></th:block>
+    </main>
+</div>
+
+<!-- modais da tela -->
+<th:block th:replace="${modals}"></th:block>
+<!-- reabre o modal da tela depois de um erro do backend (ModalReopen) -->
+<th:block th:replace="~{components/ui :: reopen}"></th:block>
+
+<!-- modais globais: valem em todas as telas -->
+<th:block th:replace="~{components/modal :: confirm}"></th:block>
+<th:block th:replace="~{components/forms :: passwordModal}"></th:block>
+
+<script th:src="@{/js/app.js}"></script>
+<script th:src="@{/js/scan.js}"></script>
+<script th:src="@{/js/isbn.js}"></script>
+<!-- código de barras das etiquetas (biblioteca no próprio projeto: funciona sem internet) -->
+<script th:src="@{/vendor/jsbarcode/JsBarcode.all.min.js}"></script>
+<script th:src="@{/js/labels.js}"></script>
+</body>
+</html>
+

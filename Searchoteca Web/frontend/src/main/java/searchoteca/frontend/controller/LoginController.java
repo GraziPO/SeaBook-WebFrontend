@@ -56,7 +56,7 @@ public class LoginController {
         if (session.getAttribute("jwt") != null) {
             return "redirect:/";
         }
-        return "login";
+        return "auth/login";
     }
 
     @PostMapping("/login")
@@ -89,7 +89,7 @@ public class LoginController {
             session.setAttribute("shownPrivacyVersion", privacy.version());
             model.addAttribute("termos", terms);
             model.addAttribute("privacidade", privacy);
-            return "termos";
+            return "auth/termos";
         } catch (RestClientException ex) {
             redirectAttributes.addFlashAttribute("erro",
                     BackendMessages.of(ex, "Não foi possível carregar os Termos de Uso agora."));
@@ -153,7 +153,7 @@ public class LoginController {
             return "redirect:/login";
         }
         model.addAttribute("email", session.getAttribute("pendingEmail"));
-        return "mfa";
+        return "auth/mfa";
     }
 
     @PostMapping("/mfa/verify")
@@ -206,7 +206,7 @@ public class LoginController {
             return "redirect:/login";
         }
         model.addAttribute("dica", PASSWORD_HINT);
-        return "primeiro_acesso";
+        return "auth/primeiro_acesso";
     }
 
     @PostMapping("/primeiro-acesso")
@@ -246,7 +246,7 @@ public class LoginController {
 
     @GetMapping("/esqueci-senha")
     public String forgotPasswordForm() {
-        return "esqueci_senha";
+        return "auth/esqueci_senha";
     }
 
     @PostMapping("/esqueci-senha")
@@ -267,7 +267,7 @@ public class LoginController {
     @GetMapping("/redefinir-senha")
     public String resetPasswordForm(Model model) {
         model.addAttribute("dica", PASSWORD_HINT);
-        return "redefinir_senha";
+        return "auth/redefinir_senha";
     }
 
     @PostMapping("/redefinir-senha")
@@ -336,7 +336,7 @@ public class LoginController {
     private String showDocument(boolean terms, Model model, RedirectAttributes redirectAttributes) {
         try {
             model.addAttribute("documento", terms ? authService.getTerms() : authService.getPrivacyPolicy());
-            return "documento_legal";
+            return "auth/documento_legal";
         } catch (RestClientException ex) {
             redirectAttributes.addFlashAttribute("erro", BackendMessages.of(ex, "Documento indisponível no momento."));
             return "redirect:/login";
