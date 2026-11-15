@@ -21,7 +21,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         // consulta pública ao acervo (consulta sem login); os endereços antigos redirecionam
                         "/acervo/consulta", "/acervo/consulta/**", "/consulta", "/consulta/**",
                         // arquivos estáticos
-                        "/css/**", "/js/**", "/vendor/**", "/images/**", "/favicon.ico"
+                        "/css/**", "/js/**", "/vendor/**", "/images/**", "/favicon.ico",
+                        // health check do Railway (sem isso, ele recebe um redirecionamento para o login)
+                        "/actuator/health", "/actuator/health/**",
+                        "/error"
                 );
     }
 }
