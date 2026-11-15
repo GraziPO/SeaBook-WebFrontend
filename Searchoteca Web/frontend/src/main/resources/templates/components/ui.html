@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Cabeçalho de tela: trilha + título. Os botões de ação ficam ao lado (actions pode ser ~{}). -->
+<div th:fragment="pageHead(crumb, title, actions)" class="page-head">
+    <div>
+        <div class="breadcrumb" th:text="${crumb}">ACERVO</div>
+        <h1 class="page-title big" th:text="${title}">Título</h1>
+    </div>
+    <div class="page-head-actions">
+        <th:block th:replace="${actions}"></th:block>
+    </div>
+</div>
+
+<!-- Lista vazia. -->
+<div th:fragment="empty(title, text)" class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+    </svg>
+    <div class="empty-title" th:text="${title}">Nada por aqui</div>
+    <div th:text="${text}">Texto</div>
+</div>
+
+<!-- Paginação das listagens (PageResponse do backend: ?page=0&size=20). -->
+<nav th:fragment="pagination(pg, url)" class="pagination" aria-label="Páginas"
+     th:if="${pg != null and pg.totalPages() > 1}">
+    <a th:if="${pg.hasPrevious()}" th:href="@{${url}(page=${pg.page() - 1})}" class="btn-outline btn-small">← Anterior</a>
+    <span th:text="|Página ${pg.page() + 1} de ${pg.totalPages()} · ${pg.totalElements()} registros|">Página 1 de 1</span>
+    <a th:if="${pg.hasNext()}" th:href="@{${url}(page=${pg.page() + 1})}" class="btn-outline btn-small">Próxima →</a>
+</nav>
+
+<!-- Erro de um formulário dentro do modal (aparece quando o modal reabre depois de um erro). -->
+<div th:fragment="modalError" class="field-full alert alert-error" data-modal-error
+     th:if="${erroModal}" th:text="${erroModal}"></div>
+
+<!-- Liga/desliga. Checkbox desmarcado não é enviado: o "_campo" escondido avisa o controller que o campo
+     estava no formulário (convenção do Spring), então ausência = desligado. -->
+<label th:fragment="toggle(id, name, checked)" class="switch">
+    <input type="hidden" th:name="${'_' + name}" value="on">
+    <input type="checkbox" th:id="${id}" th:name="${name}" value="true" th:checked="${checked}" role="switch">
+    <span class="switch-track" aria-hidden="true"></span>
+    <span class="switch-label" data-on="Ligado" data-off="Desligado"></span>
+</label>
+
+<!--
+  REABERTURA DE MODAL depois de um erro do backend (flash "reabrirModal", record ModalReopen):
+  um botão escondido com data-auto-open que o js/app.js "clica" ao carregar a página,
+  com o que a pessoa tinha digitado (data-fields) e a mensagem do erro (erroModal) dentro do modal.
+  Fica no layout, então vale para todas as telas.
+-->
+<button th:fragment="reopen" type="button" hidden data-auto-open th:if="${reabrirModal != null}"
+        th:data-open-modal="${reabrirModal.modal()}"
+        th:data-form-action="${reabrirModal.action()}"
+        th:data-title="${reabrirModal.title()}"
+        th:data-submit-label="${reabrirModal.submitLabel()}"
+        th:data-readonly="${reabrirModal.readonly()}"
+        th:data-required="${reabrirModal.required()}"
+        th:data-hint="${reabrirModal.hint()}"
+        th:data-fields="${reabrirModal.fieldsJson()}"></button>
+
+</body>
+</html>

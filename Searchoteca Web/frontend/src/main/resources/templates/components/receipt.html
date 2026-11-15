@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Comprovante de saída (venda, doação, baixa ou empréstimo). Pronto para imprimir. -->
+<div th:fragment="receipt(c)" class="receipt">
+    <div class="receipt-header">
+        <div>
+            <div class="breadcrumb">Comprovante de saída</div>
+            <div class="receipt-code" th:text="${c.code()}">CMP-00000000-000000</div>
+        </div>
+        <div class="receipt-meta">
+            <strong th:text="${c.exitTypeLabel()}">Venda</strong>
+            <div class="muted" th:text="${#temporals.format(c.issuedAt(), 'dd/MM/yyyy HH:mm')}">13/11/2026 21:00</div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div th:if="${c.operator() != null}">
+            <div class="detail-label">Operador</div>
+            <div th:text="|${c.operator().name()} (${c.operator().username()})|">operador</div>
+        </div>
+        <div th:if="${c.student() != null}">
+            <div class="detail-label">Aluno</div>
+            <div th:text="|${c.student().name()} — RA ${c.student().ra()}|">aluno</div>
+        </div>
+        <div th:if="${c.dueDate() != null}">
+            <div class="detail-label">Devolução prevista</div>
+            <div th:text="${#temporals.format(c.dueDate(), 'dd/MM/yyyy')}">data</div>
+        </div>
+    </div>
+
+    <table class="data-table receipt-table">
+        <thead>
+        <tr>
+            <th>Exemplar</th>
+            <th>Título</th>
+            <th>Autor</th>
+            <th class="num" th:if="${c.total() != null}">Valor</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="i : ${c.items()}">
+            <td class="mono" th:text="${i.copyCode()}"></td>
+            <td th:text="${i.title()}"></td>
+            <td th:text="${i.author()}"></td>
+            <td class="num" th:if="${c.total() != null}"
+                th:text="${i.unitPrice() != null} ? |R$ ${#numbers.formatDecimal(i.unitPrice(), 1, 'POINT', 2, 'COMMA')}| : '—'"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="receipt-total" th:if="${c.total() != null}"
+         th:text="|Total: R$ ${#numbers.formatDecimal(c.total(), 1, 'POINT', 2, 'COMMA')}|">Total</div>
+
+    <div class="receipt-notes" th:if="${c.notes() != null and !#strings.isEmpty(c.notes())}">
+        <div class="detail-label">Observações</div>
+        <div th:text="${c.notes()}">observações</div>
+    </div>
+
+    <div class="modal-actions no-print">
+        <button type="button" class="btn-outline" data-close-modal>Fechar</button>
+        <button type="button" class="btn-solid" data-print>Imprimir</button>
+    </div>
+</div>
+
+<!--
+  COMPROVANTE DE VENDA em formato de cupom, para a impressora térmica (rolo de 80 mm).
+  Uma coluna só, texto em preto puro e sem fundos coloridos: a térmica não imprime cinza bem.
+  O botão usa data-print="thermal" (js/app.js), que aplica o formato de 80 mm na impressão.
+-->
+<div th:fragment="saleReceipt(c)" class="thermal-wrap">
+    <div class="thermal-receipt">
+        <div class="t-center t-strong t-big">SEARCHOTECA</div>
+        <div class="t-center">Comprovante de venda</div>
+        <div class="t-rule"></div>
+        <div class="t-row"><span>Nº</span><span class="t-mono" th:text="${c.code()}">CMP-20261114-000021</span></div>
+        <div class="t-row"><span>Data</span><span th:text="${#temporals.format(c.issuedAt(), 'dd/MM/yyyy HH:mm')}">14/11/2026 19:40</span></div>
+        <div class="t-row" th:if="${c.operator() != null}"><span>Operador</span><span th:text="${c.operator().username()}">marina.op</span></div>
+        <div class="t-rule"></div>
+
+        <div class="t-item" th:each="i : ${c.items()}">
+            <div class="t-strong" th:text="${i.title()}">Vidas Secas</div>
+            <div class="t-row">
+                <span class="t-mono" th:text="${i.copyCode()}">151616565615CIED13</span>
+                <span th:text="|R$ ${#numbers.formatDecimal(i.unitPrice(), 1, 'POINT', 2, 'COMMA')}|">R$ 35,00</span>
+            </div>
+        </div>
+
+        <div class="t-rule"></div>
+        <div class="t-row t-strong t-big">
+            <span th:text="|TOTAL (${#lists.size(c.items())} ${#lists.size(c.items()) == 1 ? 'item' : 'itens'})|">TOTAL (2 itens)</span>
+            <span th:text="|R$ ${#numbers.formatDecimal(c.total(), 1, 'POINT', 2, 'COMMA')}|">R$ 70,00</span>
+        </div>
+        <div class="t-rule"></div>
+        <div class="t-center t-small">Guarde este comprovante.</div>
+        <div class="t-center t-small">Consulte pelo código em Saídas &gt; Comprovantes.</div>
+    </div>
+
+    <div class="modal-actions no-print">
+        <button type="button" class="btn-outline" data-close-modal>Fechar</button>
+        <button type="button" class="btn-solid" data-print="thermal">Imprimir cupom</button>
+    </div>
+</div>
+
+</body>
+</html>

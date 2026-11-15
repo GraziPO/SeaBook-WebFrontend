@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!-- ACERVO / EXEMPLARES: movimentação em lote e reimpressão de etiquetas, com a lista de leitura. -->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Exemplares', active='acervo/exemplares',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / EXEMPLARES', title='Exemplares', actions=~{})}"></div>
+
+    <div class="option-grid">
+        <article class="option-card">
+            <div class="option-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg></div>
+            <h2 class="option-title">Nova entrada</h2>
+            <p class="option-text">Cadastra exemplares de um livro numa localização e gera as etiquetas.</p>
+            <button type="button" class="btn-solid" data-open-modal="modal-entrada">Cadastrar exemplares</button>
+        </article>
+        <article class="option-card">
+            <div class="option-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line></svg></div>
+            <h2 class="option-title">Movimentar em lote</h2>
+            <p class="option-text">Leia as etiquetas dos exemplares e escolha a nova localização.</p>
+            <button type="button" class="btn-solid" data-open-modal="modal-movimentar">Movimentar</button>
+        </article>
+        <article class="option-card">
+            <div class="option-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></div>
+            <h2 class="option-title">Reimprimir etiquetas</h2>
+            <p class="option-text">Gera de novo a etiqueta de exemplares com a etiqueta danificada.</p>
+            <button type="button" class="btn-solid" data-open-modal="modal-reimprimir">Reimprimir</button>
+        </article>
+    </div>
+</section>
+
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-entrada', title='Nova entrada de exemplares', body=~{::entryForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-movimentar', title='Movimentar em lote', body=~{::moveForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-reimprimir', title='Reimprimir etiquetas', body=~{::reprintForm})}"></dialog>
+</th:block>
+
+<form th:fragment="entryForm" th:action="@{/acervo/exemplares}" method="post" class="data-form">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div>
+        <label for="ent-isbn">ISBN do livro</label>
+        <input id="ent-isbn" type="text" name="isbn" required autocomplete="off" placeholder="Leia o código de barras do livro">
+    </div>
+    <div>
+        <label for="ent-qtd">Quantidade</label>
+        <input id="ent-qtd" type="number" name="quantity" required min="1" max="100" value="1">
+    </div>
+    <div class="field-full">
+        <label for="ent-local">Localização</label>
+        <select id="ent-local" name="localCode" required>
+            <option value="">Selecione…</option>
+            <option th:each="l : ${localizacoes}" th:value="${l.localCode}"
+                    th:text="|${l.localCode} — ${l.localName} (${l.departCode})|">D1 — Estante 1 (CIE)</option>
+        </select>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Cadastrar e imprimir etiquetas</button>
+    </div>
+</form>
+
+<form th:fragment="moveForm" th:action="@{/acervo/exemplares/movimentacao}" method="post" class="data-form">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div class="field-full">
+        <label for="mov-destino">Nova localização</label>
+        <select id="mov-destino" name="localCode" required>
+            <option value="">Selecione…</option>
+            <option th:each="l : ${localizacoes}" th:value="${l.localCode}"
+                    th:text="|${l.localCode} — ${l.localName} (${l.departCode})|">D1 — Estante 1 (CIE)</option>
+        </select>
+    </div>
+    <!-- a movimentação usa o código da etiqueta; o backend só move exemplar disponível na estante -->
+    <div th:replace="~{components/scan :: scanList(name='copyCodes', label='Exemplares',
+                        submit='code', expect='AVAILABLE', price=false)}"></div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Movimentar e imprimir etiquetas</button>
+    </div>
+</form>
+
+<form th:fragment="reprintForm" th:action="@{/acervo/exemplares/etiquetas}" method="get" class="data-form">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div th:replace="~{components/scan :: scanList(name='codigos', label='Exemplares',
+                        submit='code', expect='', price=false)}"></div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Gerar etiquetas</button>
+    </div>
+</form>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<!--
+  ACERVO / CONSULTA / <livro>: dados do livro, onde encontrar e, para o aluno, a fila de espera.
+  A fila só aparece quando o título tem exemplares, mas nenhum disponível (regra do backend: canJoin).
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title=${livro.title()}, active='acervo/consulta',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <a th:href="@{/acervo/consulta(q=${q})}" class="back-inline">← Voltar para a busca</a>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / CONSULTA', title=${livro.title()}, actions=~{})}"></div>
+
+    <div th:replace="~{components/book :: detail(${livro}, ${fila})}"></div>
+</section>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ===================================================================== alterar senha (global) -->
+<th:block th:fragment="passwordModal" th:if="${currentUser}">
+    <dialog th:replace="~{components/modal :: modal(id='modal-senha', title='Alterar senha', body=~{components/forms :: passwordForm})}"></dialog>
+    <!-- reabre sozinho se a troca falhou -->
+    <button type="button" hidden data-auto-open data-open-modal="modal-senha" th:if="${abrirModal == 'modal-senha'}"></button>
+</th:block>
+
+<form th:fragment="passwordForm" th:action="@{/conta/senha}" method="post" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div class="field-full alert alert-error" data-modal-error th:if="${erroSenha}" th:text="${erroSenha}"></div>
+    <div class="field-full">
+        <label for="senha-atual">Senha atual</label>
+        <input id="senha-atual" type="password" name="currentPassword" required autocomplete="current-password">
+    </div>
+    <div>
+        <label for="senha-nova">Nova senha</label>
+        <input id="senha-nova" type="password" name="newPassword" required minlength="8" maxlength="72" autocomplete="new-password">
+        <div class="hint">Ao menos 8 caracteres, com letras e números.</div>
+    </div>
+    <div>
+        <label for="senha-confirma">Confirme a nova senha</label>
+        <input id="senha-confirma" type="password" name="confirmPassword" required minlength="8" maxlength="72" autocomplete="new-password">
+    </div>
+    <p class="field-full hint">Depois da troca, você vai precisar entrar de novo com a senha nova.</p>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Alterar senha</button>
+    </div>
+</form>
+
+</body>
+</html>

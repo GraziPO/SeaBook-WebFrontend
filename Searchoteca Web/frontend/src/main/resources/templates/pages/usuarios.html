@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<!--
+  CONFIGURAÇÕES / USUÁRIOS: abas Operadores, Alunos e Pedidos de conta, numa tela só.
+  Modais: operador (novo/editar), aluno (novo), aluno (editar) e a decisão de um pedido (aprovar/recusar).
+  A senha inicial é a senha padrão da organização (INITIAL_PASSWORD) e é trocada no 1º acesso.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Usuários', active='configuracoes/usuarios',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='CONFIGURAÇÕES / USUÁRIOS', title='Usuários', actions=~{::headActions})}"></div>
+
+    <div class="filter-tabs">
+        <a th:href="@{/usuarios}" th:classappend="${aba == 'operadores'} ? 'active'">Operadores</a>
+        <a th:href="@{/usuarios(aba='alunos')}" th:classappend="${aba == 'alunos'} ? 'active'">Alunos</a>
+        <a th:href="@{/usuarios/pedidos}" th:classappend="${aba == 'pedidos'} ? 'active'">
+            Pedidos de conta <span class="tab-count" th:if="${pedidosPendentes > 0}" th:text="${pedidosPendentes}">2</span>
+        </a>
+    </div>
+
+    <!-- ================= OPERADORES ================= -->
+    <th:block th:if="${aba == 'operadores'}">
+        <table class="data-table" th:if="${not #lists.isEmpty(pagina.content())}">
+            <thead>
+            <tr><th>Usuário</th><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="u : ${pagina.content()}">
+                <td class="mono" th:text="${u.username()}">marina.op</td>
+                <td th:text="${u.completeName()}">Marina Souza</td>
+                <td th:text="${u.email()}">marina@escola.edu.br</td>
+                <td th:text="${roleLabels[u.roleCode()] ?: u.roleCode()}">Operador de empréstimo</td>
+                <td><span class="status-pill" th:classappend="${u.active()} ? 'active' : 'inactive'"
+                          th:text="${u.active()} ? 'Ativo' : 'Desativado'">Ativo</span></td>
+                <td class="actions-cell">
+                    <!-- conta root: só o root mexe (o backend também barra) -->
+                    <th:block th:if="${u.roleCode() != 'root' or nav.isRoot()}">
+                        <button type="button" class="btn-edit" data-open-modal="modal-operador"
+                                th:data-form-action="@{/usuarios/{u}/editar(u=${u.username()})}"
+                                data-title="Editar usuário" data-submit-label="Salvar" data-readonly="username"
+                                th:data-f-username="${u.username()}" th:data-f-complete-name="${u.completeName()}"
+                                th:data-f-email="${u.email()}" th:data-f-role-code="${u.roleCode()}">Editar</button>
+                        <button type="button" class="btn-toggle" th:if="${u.active() and u.username() != currentUser}"
+                                data-open-modal="modal-confirmar"
+                                th:data-form-action="@{/usuarios/{u}/desativar(u=${u.username()})}"
+                                data-title="Desativar conta" data-submit-label="Desativar"
+                                th:data-message="|Desativar ${u.username()}? A pessoa perde o acesso na hora.|">Desativar</button>
+                        <button type="button" class="btn-toggle" th:unless="${u.active()}" data-open-modal="modal-confirmar"
+                                th:data-form-action="@{/usuarios/{u}/ativar(u=${u.username()})}"
+                                data-title="Reativar conta" data-submit-label="Reativar"
+                                th:data-message="|Reativar ${u.username()}?|">Reativar</button>
+                    </th:block>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <th:block th:if="${#lists.isEmpty(pagina.content())}">
+            <div th:replace="~{components/ui :: empty(title='Nenhum operador cadastrado', text='Cadastre o primeiro em + Novo operador.')}"></div>
+        </th:block>
+        <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url=${paginaUrl})}"></nav>
+    </th:block>
+
+    <!-- ================= ALUNOS ================= -->
+    <th:block th:if="${aba == 'alunos'}">
+        <table class="data-table" th:if="${not #lists.isEmpty(pagina.content())}">
+            <thead>
+            <tr><th>RA</th><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Situação</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="u : ${pagina.content()}">
+                <td class="mono" th:text="${u.ra() ?: '—'}">2026001</td>
+                <td th:text="${u.completeName()}">Ana Lima</td>
+                <td class="mono" th:text="${u.username()}">ana.lima</td>
+                <td th:text="${u.email()}">ana@escola.edu.br</td>
+                <td><span class="status-pill" th:classappend="${u.active()} ? 'active' : 'inactive'"
+                          th:text="${u.active()} ? 'Ativo' : 'Desativado'">Ativo</span></td>
+                <td class="actions-cell">
+                    <button type="button" class="btn-edit" data-open-modal="modal-aluno-editar"
+                            th:data-form-action="@{/usuarios/{u}/editar(u=${u.username()})}"
+                            data-title="Editar aluno" data-submit-label="Salvar" data-readonly="username"
+                            th:data-f-username="${u.username()}" th:data-f-complete-name="${u.completeName()}"
+                            th:data-f-email="${u.email()}">Editar</button>
+                    <button type="button" class="btn-toggle" th:if="${u.active()}" data-open-modal="modal-confirmar"
+                            th:data-form-action="@{/usuarios/{u}/desativar(u=${u.username()})}"
+                            data-title="Desativar aluno" data-submit-label="Desativar"
+                            th:data-message="|Desativar ${u.completeName()}? Ele perde o acesso na hora e sai das filas de espera.|">Desativar</button>
+                    <button type="button" class="btn-toggle" th:unless="${u.active()}" data-open-modal="modal-confirmar"
+                            th:data-form-action="@{/usuarios/{u}/ativar(u=${u.username()})}"
+                            data-title="Reativar aluno" data-submit-label="Reativar"
+                            th:data-message="|Reativar ${u.completeName()}?|">Reativar</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <th:block th:if="${#lists.isEmpty(pagina.content())}">
+            <div th:replace="~{components/ui :: empty(title='Nenhum aluno cadastrado', text='Cadastre o primeiro em + Novo aluno.')}"></div>
+        </th:block>
+        <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url=${paginaUrl})}"></nav>
+    </th:block>
+
+    <!-- ================= PEDIDOS DE CONTA ================= -->
+    <th:block th:if="${aba == 'pedidos'}">
+        <p class="page-intro">
+            Pedidos de desativação feitos pelo aluno e pedidos de reativação feitos na tela de login.
+            <th:block th:unless="${nav.isRoot()}">Seu perfil decide a reativação de contas desativadas por inatividade;
+                os demais pedidos ficam com o root.</th:block>
+        </p>
+        <div class="filter-tabs filter-tabs-sm">
+            <a th:href="@{/usuarios/pedidos}" th:classappend="${filtroPedidos == 'PENDING'} ? 'active'">Pendentes</a>
+            <a th:href="@{/usuarios/pedidos(status='TODOS')}" th:classappend="${filtroPedidos == 'TODOS'} ? 'active'">Todos (últimos 200)</a>
+        </div>
+
+        <table class="data-table" th:if="${not #lists.isEmpty(pedidos)}">
+            <thead>
+            <tr><th>Pedido</th><th>Aluno</th><th>Motivo</th><th>Conta</th><th>Situação</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${pedidos}">
+                <td>
+                    <strong th:text="${p.typeLabel()}">Reativação</strong>
+                    <div class="muted" th:text="${#temporals.format(p.createdAt(), 'dd/MM/yyyy HH:mm')}">12/11/2026 10:30</div>
+                </td>
+                <td>
+                    <span th:text="${p.completeName()}">Ana Lima</span>
+                    <div class="muted" th:text="|${p.username()}${p.ra() != null ? ' · RA ' + p.ra() : ''}|">ana.lima · RA 2026001</div>
+                </td>
+                <td th:text="${p.reason() ?: '—'}">Voltei a estudar</td>
+                <td th:text="${p.deactivationLabel()}">Desativada por inatividade</td>
+                <td>
+                    <span class="status-pill" th:classappend="${p.pillClass()}" th:text="${p.statusLabel()}">Pendente</span>
+                    <div class="muted" th:if="${p.decidedBy() != null}"
+                         th:text="|por ${p.decidedBy()} em ${#temporals.format(p.decidedAt(), 'dd/MM/yyyy')}|">por root</div>
+                    <div class="muted" th:if="${p.decisionNote() != null}" th:text="${p.decisionNote()}">observação</div>
+                </td>
+                <td class="actions-cell">
+                    <th:block th:if="${p.pending()}">
+                        <button type="button" class="btn-edit" data-open-modal="modal-decisao"
+                                th:data-form-action="@{/usuarios/pedidos/{id}/aprovar(id=${p.requestId()})}"
+                                th:data-title="|Aprovar ${#strings.toLowerCase(p.typeLabel())}|" data-submit-label="Aprovar"
+                                th:data-message="|${p.typeLabel()} da conta de ${p.completeName()}.|">Aprovar</button>
+                        <button type="button" class="btn-delete" data-open-modal="modal-decisao"
+                                th:data-form-action="@{/usuarios/pedidos/{id}/recusar(id=${p.requestId()})}"
+                                th:data-title="|Recusar ${#strings.toLowerCase(p.typeLabel())}|" data-submit-label="Recusar"
+                                th:data-message="|${p.typeLabel()} da conta de ${p.completeName()}.|">Recusar</button>
+                    </th:block>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <th:block th:if="${#lists.isEmpty(pedidos)}">
+            <div th:replace="~{components/ui :: empty(title='Nenhum pedido aqui', text='Os pedidos de desativação e de reativação aparecem nesta aba.')}"></div>
+        </th:block>
+    </th:block>
+</section>
+
+<th:block th:fragment="headActions">
+    <button type="button" class="btn-outline" data-open-modal="modal-aluno">+ Novo aluno</button>
+    <button type="button" class="btn-solid" data-open-modal="modal-operador" th:data-form-action="@{/usuarios}"
+            data-title="Novo operador" data-submit-label="Cadastrar">+ Novo operador</button>
+</th:block>
+
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-operador', title='Novo operador', body=~{::operatorForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-aluno', title='Novo aluno', body=~{::studentForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-aluno-editar', title='Editar aluno', body=~{::studentEditForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-decisao', title='Decidir pedido', body=~{::decisionForm})}"></dialog>
+</th:block>
+
+<form th:fragment="operatorForm" method="post" th:action="@{/usuarios}" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div>
+        <label for="op-usuario">Usuário</label>
+        <input id="op-usuario" type="text" name="username" required maxlength="30" autocomplete="off">
+    </div>
+    <div>
+        <label for="op-perfil">Perfil</label>
+        <select id="op-perfil" name="roleCode" required>
+            <option value="">Selecione…</option>
+            <th:block th:each="r : ${roleLabels}">
+                <!-- aluno tem cadastro próprio; root só aparece para o root -->
+                <option th:if="${r.key != 'students' and (r.key != 'root' or nav.isRoot())}"
+                        th:value="${r.key}" th:text="${r.value}">Operador de acervo</option>
+            </th:block>
+        </select>
+    </div>
+    <div class="field-full">
+        <label for="op-nome">Nome completo</label>
+        <input id="op-nome" type="text" name="completeName" required maxlength="100">
+    </div>
+    <div class="field-full">
+        <label for="op-email">E-mail</label>
+        <input id="op-email" type="email" name="email" required maxlength="100">
+        <div class="hint">O código de acesso (MFA) e a recuperação de senha chegam neste e-mail.</div>
+    </div>
+    <p class="field-full modal-hint">A senha inicial é a <strong>senha padrão da organização</strong>. A pessoa é obrigada a trocá-la no primeiro acesso.</p>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Cadastrar</button>
+    </div>
+</form>
+
+<form th:fragment="studentForm" method="post" th:action="@{/alunos}" class="data-form">
+    <input type="hidden" name="returnTo" th:value="@{/usuarios(aba='alunos')}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div class="field-full">
+        <label for="al-nome">Nome completo</label>
+        <input id="al-nome" type="text" name="completeName" required maxlength="100">
+    </div>
+    <div>
+        <label for="al-ra">RA</label>
+        <input id="al-ra" type="text" name="ra" required maxlength="30" autocomplete="off">
+    </div>
+    <div>
+        <label for="al-telefone">Telefone</label>
+        <input id="al-telefone" type="tel" name="phone" maxlength="20" placeholder="(11) 90000-0000">
+    </div>
+    <div>
+        <label for="al-usuario">Usuário</label>
+        <input id="al-usuario" type="text" name="username" required maxlength="30" autocomplete="off">
+    </div>
+    <div>
+        <label for="al-email">E-mail</label>
+        <input id="al-email" type="email" name="email" required maxlength="100">
+    </div>
+    <p class="field-full modal-hint">A senha inicial é a <strong>senha padrão da organização</strong>. O aluno é obrigado a trocá-la no primeiro acesso.</p>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Cadastrar aluno</button>
+    </div>
+</form>
+
+<form th:fragment="studentEditForm" method="post" action="#" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div class="field-full">
+        <label for="ale-usuario">Usuário</label>
+        <input id="ale-usuario" type="text" name="username" readonly>
+    </div>
+    <div class="field-full">
+        <label for="ale-nome">Nome completo</label>
+        <input id="ale-nome" type="text" name="completeName" required maxlength="100">
+    </div>
+    <div class="field-full">
+        <label for="ale-email">E-mail</label>
+        <input id="ale-email" type="email" name="email" required maxlength="100">
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Salvar</button>
+    </div>
+</form>
+
+<form th:fragment="decisionForm" method="post" action="#" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <p class="field-full modal-message" data-modal-message></p>
+    <div class="field-full">
+        <label for="dec-obs">Observação (opcional)</label>
+        <textarea id="dec-obs" name="note" rows="3" maxlength="255"
+                  placeholder="Fica registrada no pedido e na auditoria"></textarea>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Confirmar</button>
+    </div>
+</form>
+
+</body>
+</html>

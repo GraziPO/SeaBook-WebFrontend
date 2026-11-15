@@ -1,0 +1,54 @@
+# =====================================================================
+# CI do frontend Searchoteca (o projeto fica em "Searchoteca Web/frontend").
+# Compila, roda o teste de inicialização (contextLoads) e gera o .jar.
+# Railway com "Wait for CI" ligado: o deploy espera este workflow e é pulado se ele falhar.
+# =====================================================================
+name: CI frontend
+
+on:
+  push:
+    branches: [main, Development]
+  pull_request:
+    branches: [main, Development]
+
+concurrency:
+  group: ci-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Searchoteca Web/frontend
+
+jobs:
+  build:
+    name: Compilar e testar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: Searchoteca Web/frontend/pom.xml
+
+      - name: Preparar o Maven Wrapper
+        run: sed -i 's/\r$//' mvnw && chmod +x mvnw
+
+      # o teste só sobe o contexto do Spring; não precisa do backend no ar
+      - name: Compilar, testar e empacotar
+        run: ./mvnw -B -ntp verify
+
+      - name: Guardar relatórios dos testes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-testes-frontend
+          path: Searchoteca Web/frontend/target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 7

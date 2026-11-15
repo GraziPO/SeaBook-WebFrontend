@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  MODAL GENÉRICO (usa o <dialog> nativo do navegador: Esc fecha, o foco fica preso dentro dele).
+
+    <dialog th:replace="~{components/modal :: modal(id='modal-x', title='Título', body=~{::meuFormulario})}"></dialog>
+
+  Quem abre é qualquer botão com data-open-modal="modal-x" (ver /js/app.js). O botão pode trazer:
+    data-title          troca o título            data-submit-label  troca o texto do botão principal
+    data-form-action    troca o action do form    data-hint          troca o texto de [data-modal-hint]
+    data-f-<campo>      preenche o campo          data-readonly      campos só leitura (nomes, vírgula)
+    data-message        troca [data-modal-message] data-required     campos obrigatórios (nomes, vírgula)
+-->
+<dialog th:fragment="modal(id, title, body)" th:id="${id}" class="modal"
+        th:attr="aria-labelledby=${id + '-titulo'}">
+    <div class="modal-header">
+        <h2 class="modal-title" th:id="${id + '-titulo'}" data-modal-title th:text="${title}">Título</h2>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <th:block th:replace="${body}"></th:block>
+    </div>
+</dialog>
+
+
+<!--
+  CONFIRMAÇÃO (global, fica no layout). Substitui o confirm() do navegador. Exemplo:
+    <button type="button" class="btn-delete" data-open-modal="modal-confirmar"
+            th:data-form-action="@{/acervo/departamentos/X/excluir}"
+            data-title="Excluir departamento" data-message="Excluir o departamento X?" data-submit-label="Excluir">
+-->
+<dialog th:fragment="confirm" id="modal-confirmar" class="modal modal-sm" aria-labelledby="modal-confirmar-titulo">
+    <div class="modal-header">
+        <h2 class="modal-title" id="modal-confirmar-titulo" data-modal-title>Confirmar</h2>
+        <button type="button" class="modal-close" data-close-modal aria-label="Fechar">&times;</button>
+    </div>
+    <div class="modal-body">
+        <form method="post" action="#">
+            <input type="hidden" name="returnTo" th:value="${currentUri}">
+            <p class="modal-message" data-modal-message>Tem certeza?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+                <button type="submit" class="btn-danger" data-modal-submit>Confirmar</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+</body>
+</html>

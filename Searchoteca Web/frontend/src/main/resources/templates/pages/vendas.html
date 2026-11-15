@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--
+  VENDAS (aba própria, só com o módulo ligado). É um "caixa": a venda é a tarefa principal da tela,
+  então o formulário fica na própria página. O cupom sai no formato da impressora térmica.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Vendas', active='vendas',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='VENDAS', title='Nova venda', actions=~{})}"></div>
+
+    <p class="page-intro">
+        Leia a etiqueta de cada exemplar. O preço vem do cadastro do livro e não pode ser alterado aqui;
+        livro sem preço cadastrado não pode ser vendido.
+    </p>
+
+    <div class="form-card form-card-wide">
+        <form th:action="@{/vendas}" method="post" class="data-form" th:data-scan-restore="${vendaCodigos}">
+            <div class="field-full alert alert-error" th:if="${erroVenda}" th:text="${erroVenda}"></div>
+
+            <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares vendidos',
+                                submit='code', expect='AVAILABLE', price=true)}"></div>
+
+            <div class="field-full">
+                <label for="venda-obs">Observações (opcional)</label>
+                <input id="venda-obs" type="text" name="notes" maxlength="255" th:value="${vendaObs}" placeholder="ex.: venda na feira do livro">
+            </div>
+            <div class="form-actions">
+                <button type="reset" class="btn-outline">Limpar</button>
+                <button type="submit" class="btn-solid">Finalizar venda</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<th:block th:fragment="modals">
+    <!-- cupom da venda recém-finalizada -->
+    <th:block th:if="${comprovante != null}">
+        <dialog th:replace="~{components/modal :: modal(id='modal-cupom', title='Venda finalizada', body=~{components/receipt :: saleReceipt(${comprovante})})}"></dialog>
+        <button type="button" hidden data-auto-open data-open-modal="modal-cupom"></button>
+    </th:block>
+</th:block>
+
+</body>
+</html>

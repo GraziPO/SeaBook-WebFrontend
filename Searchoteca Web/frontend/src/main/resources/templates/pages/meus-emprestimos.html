@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!--
+  MEUS EMPRÉSTIMOS (aluno): o que está com ele (ordenado pela devolução mais próxima),
+  a fila de espera e o histórico, numa tela só.
+  Reserva pronta aparece no topo, porque tem prazo.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Meus empréstimos', active='meus',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='MEUS EMPRÉSTIMOS', title='Meus empréstimos', actions=~{})}"></div>
+
+    <!-- reserva pronta: tem prazo, vem primeiro -->
+    <div class="notice-ready" th:each="r : ${reservas}">
+        <strong th:text="|${r.title()} está reservado para você|">Grande Sertão: Veredas está reservado para você</strong>
+        <span th:text="|Retire no balcão até ${#temporals.format(r.expiresAt(), 'dd/MM ''às'' HH:mm')}.|">Retire no balcão até 16/11 às 18:00.</span>
+    </div>
+
+    <!-- resumo -->
+    <div class="stat-row">
+        <div class="stat"><div class="stat-value" th:text="${comVoce}">2</div><div class="stat-label">livros com você</div></div>
+        <div class="stat" th:classappend="${atrasados > 0} ? 'danger'">
+            <div class="stat-value" th:text="${atrasados}">0</div><div class="stat-label">atrasados</div>
+        </div>
+        <div class="stat"><div class="stat-value" th:text="${proximaDevolucao != null} ? ${#temporals.format(proximaDevolucao, 'dd/MM')} : '—'">29/11</div><div class="stat-label">próxima devolução</div></div>
+        <div class="stat"><div class="stat-value" th:text="${#lists.size(fila)}">1</div><div class="stat-label">na fila de espera</div></div>
+    </div>
+
+    <!-- com você -->
+    <h2 class="section-title">Com você</h2>
+    <div class="loan-cards" th:if="${not #lists.isEmpty(abertos)}">
+        <article class="loan-card" th:each="i : ${abertos}" th:classappend="${i.overdue()} ? 'overdue'">
+            <div class="loan-card-title" th:text="${i.title()}">Vidas Secas</div>
+            <div class="muted" th:text="|${i.author()} · Exemplar ${i.copyIndex()}|">Graciliano Ramos · Exemplar 2</div>
+            <div class="loan-card-due">
+                <span class="status-pill" th:classappend="${i.overdue()} ? 'overdue' : 'open'"
+                      th:text="${i.overdue()} ? 'Atrasado' : 'Com você'">Com você</span>
+                <span th:text="|Devolver até ${#temporals.format(i.dueDate(), 'dd/MM/yyyy')}|">Devolver até 29/11/2026</span>
+            </div>
+            <div class="loan-card-left" th:text="${i.overdue()} ? |Atrasado há ${i.daysLate()} dia(s). Devolva o quanto antes: com atraso, novos empréstimos ficam bloqueados.| : |Faltam ${i.daysLeft()} dias.|">Faltam 15 dias.</div>
+        </article>
+    </div>
+    <th:block th:if="${#lists.isEmpty(abertos)}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum livro com você agora', text='Procure um livro na Consulta do acervo.')}"></div>
+    </th:block>
+
+    <!-- fila de espera -->
+    <h2 class="section-title">Fila de espera</h2>
+    <table class="data-table" th:if="${not #lists.isEmpty(fila)}">
+        <thead><tr><th>Livro</th><th>Situação</th><th>Ações</th></tr></thead>
+        <tbody>
+        <tr th:each="w : ${fila}">
+            <td><a th:href="@{/acervo/consulta/{i}(i=${w.isbn()})}" class="row-link" th:text="${w.title()}">Cálculo, volume 1</a></td>
+            <td>
+                <span th:if="${w.status() == 'NOTIFIED'}" class="status-pill active"
+                      th:text="|Reservado até ${#temporals.format(w.expiresAt(), 'dd/MM HH:mm')}|">Reservado até 16/11 18:00</span>
+                <span th:if="${w.status() == 'WAITING'}" class="status-pill open" th:text="|${w.position()}º da fila|">2º da fila</span>
+            </td>
+            <td class="actions-cell">
+                <button type="button" class="btn-toggle" data-open-modal="modal-confirmar"
+                        th:data-form-action="@{/fila/{i}/sair(i=${w.isbn()})}"
+                        data-title="Sair da fila" data-submit-label="Sair da fila"
+                        th:data-message="|Sair da fila de ${w.title()}? Você perde a sua posição${w.status() == 'NOTIFIED' ? ' e a reserva passa para o próximo' : ''}.|">Sair da fila</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="hint" th:if="${#lists.isEmpty(fila)}">Você não está em nenhuma fila. Quando um livro não tiver exemplar disponível, entre na fila pela página dele.</p>
+
+    <!-- histórico -->
+    <h2 class="section-title">Histórico</h2>
+    <table class="data-table" th:if="${not #lists.isEmpty(historico.content())}">
+        <thead><tr><th>Livro</th><th>Retirado em</th><th>Devolvido em</th><th>Situação</th></tr></thead>
+        <tbody>
+        <tr th:each="h : ${historico.content()}">
+            <td><strong th:text="${h.title()}">Dom Casmurro</strong><div class="muted" th:text="${h.author()}">Machado de Assis</div></td>
+            <td th:text="${#temporals.format(h.loanDate(), 'dd/MM/yyyy')}">02/10/2026</td>
+            <td th:text="${h.returnedAt() != null} ? ${#temporals.format(h.returnedAt(), 'dd/MM/yyyy')} : '—'">15/10/2026</td>
+            <td><span class="status-pill" th:classappend="${h.late()} ? 'overdue' : 'closed'"
+                      th:text="${h.late()} ? 'Devolvido com atraso' : 'Devolvido'">Devolvido</span></td>
+        </tr>
+        </tbody>
+    </table>
+    <nav th:replace="~{components/ui :: pagination(pg=${historico}, url='/meus-emprestimos')}"></nav>
+</section>
+</body>
+</html>

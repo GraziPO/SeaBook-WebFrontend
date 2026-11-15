@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  DETALHE DO LIVRO: dados, quadro de disponibilidade/fila e "onde encontrar".
+  Usado na página do livro (pages/consulta-detalhe.html) e no modal da consulta
+  (GET /acervo/consulta/{isbn}?parcial=true devolve só este pedaço, que o js/app.js põe no modal).
+  A fila de espera só aparece para o aluno, e só quando não há exemplar disponível.
+-->
+<div th:fragment="detail(livro, fila)" class="book-detail-wrap">
+    <div class="book-detail">
+        <div class="book-info panel-soft">
+            <div class="detail-grid">
+                <div><div class="detail-label">Autor</div><div th:text="${livro.author()}">Graciliano Ramos</div></div>
+                <div><div class="detail-label">Editora</div><div th:text="${livro.publisher() ?: '—'}">Record</div></div>
+                <div><div class="detail-label">Ano</div><div th:text="${livro.relYear() ?: '—'}">1938</div></div>
+                <div><div class="detail-label">Gênero</div><div th:text="${livro.genre() ?: '—'}">Romance</div></div>
+                <div><div class="detail-label">ISBN</div><div class="mono" th:text="${livro.isbn()}">9788501002448</div></div>
+            </div>
+        </div>
+
+        <!-- situação para o aluno: disponível / fila / já está na fila / reserva pronta -->
+        <aside class="book-status" th:with="f=${fila}">
+            <th:block th:if="${livro.totalAvailable() > 0}">
+                <div class="status-big ok" th:text="|${livro.totalAvailable()} disponíve${livro.totalAvailable() == 1 ? 'l' : 'is'}|">2 disponíveis</div>
+                <p>Retire no balcão da biblioteca, com sua carteirinha. Veja abaixo onde fica.</p>
+            </th:block>
+
+            <th:block th:if="${livro.totalAvailable() == 0 and f != null}">
+                <th:block th:if="${f.joined() and f.status() == 'NOTIFIED'}">
+                    <div class="status-big ok">Reservado para você</div>
+                    <p th:text="|Retire no balcão até ${#temporals.format(f.expiresAt(), 'dd/MM ''às'' HH:mm')}. Depois disso, a vez passa para o próximo da fila.|">Retire até 16/11 às 18:00.</p>
+                </th:block>
+                <th:block th:if="${f.joined() and f.status() == 'WAITING'}">
+                    <div class="status-big wait" th:text="|Você é o ${f.position()}º da fila|">Você é o 2º da fila</div>
+                    <p>Quando um exemplar voltar e chegar a sua vez, você recebe um e-mail e tem um prazo para retirar.</p>
+                    <button type="button" class="btn-outline" data-open-modal="modal-confirmar"
+                            th:data-form-action="@{/fila/{isbn}/sair(isbn=${livro.isbn()})}"
+                            data-title="Sair da fila" data-submit-label="Sair da fila"
+                            th:data-message="|Sair da fila de ${livro.title()}? Você perde a sua posição.|">Sair da fila</button>
+                </th:block>
+                <th:block th:if="${!f.joined()}">
+                    <div class="status-big no">Nenhum exemplar disponível</div>
+                    <p th:if="${f.canJoin()}" th:text="|Entre na fila de espera: ${f.queueSize()} de ${f.limit()} lugares ocupados.|">Entre na fila de espera.</p>
+                    <p th:unless="${f.canJoin()}">A fila de espera deste título está cheia. Tente de novo mais tarde.</p>
+                    <form th:if="${f.canJoin()}" th:action="@{/fila/{isbn}(isbn=${livro.isbn()})}" method="post">
+                        <button type="submit" class="btn-solid">Entrar na fila de espera</button>
+                    </form>
+                </th:block>
+            </th:block>
+
+            <!-- operador (sem fila) ou visitante sem login -->
+            <th:block th:if="${livro.totalAvailable() == 0 and f == null}">
+                <div class="status-big no">Nenhum exemplar disponível</div>
+                <p th:unless="${currentUser}">Entre com sua conta de aluno para entrar na fila de espera.</p>
+                <p th:if="${currentUser}">Todos os exemplares estão emprestados ou reservados.</p>
+            </th:block>
+        </aside>
+    </div>
+
+    <h2 class="section-title">Onde encontrar</h2>
+    <table class="data-table" th:if="${not #lists.isEmpty(livro.locations())}">
+        <thead><tr><th>Departamento</th><th>Localização</th><th class="num">Disponíveis</th><th class="num">Total</th></tr></thead>
+        <tbody>
+        <tr th:each="loc : ${livro.locations()}">
+            <td th:text="|${loc.departCode()} — ${loc.departName()}|">CIE — Ciências</td>
+            <td th:text="|${loc.localCode()} — ${loc.localName()}|">D1 — Estante 1</td>
+            <td class="num" th:text="${loc.available()}">1</td>
+            <td class="num" th:text="${loc.total()}">2</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

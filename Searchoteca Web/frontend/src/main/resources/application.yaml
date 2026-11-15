@@ -1,10 +1,37 @@
+# =====================================================================
+# Na sua máquina tudo funciona com os padrões abaixo (porta 8081, backend em localhost:8080).
+# No Railway, os valores vêm da aba Variables do serviço (veja GUIA-RAILWAY-FRONTEND.md).
+# =====================================================================
 server:
-  port: 8081
+  # o Railway informa a porta na variável PORT
+  port: ${PORT:8081}
+  # atrás do proxy do Railway: enxerga o https e o IP reais do visitante (X-Forwarded-*)
+  forward-headers-strategy: native
+  servlet:
+    session:
+      # mesma validade do token do backend (jwt.expiration-ms = 1 h)
+      timeout: 60m
+      cookie:
+        http-only: true
+        same-site: lax
+        # no Railway (https): SESSION_COOKIE_SECURE=true -> o cookie da sessão só viaja por https
+        secure: ${SESSION_COOKIE_SECURE:false}
 
 spring:
   application:
     name: frontend
 
-# URL onde o backend (projeto Searchoteca) esta rodando
+# URL onde o backend (projeto Searchoteca) está rodando.
+# No Railway: rede interna, ex. http://backend.railway.internal:8080 (variável BACKEND_BASE_URL)
 backend:
-  base-url: http://localhost:8080
+  base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+
+# ===== Health check do Railway =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
