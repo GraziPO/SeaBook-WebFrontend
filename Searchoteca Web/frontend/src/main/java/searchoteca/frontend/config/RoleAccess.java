@@ -17,9 +17,14 @@ public record RoleAccess(String role,
                          boolean audit,          // audit:view
                          boolean editPrice,      // org_books:edit_price
                          boolean student,        // loans:view_own
-                         boolean dashboard) {    // dashboard:view
+                         boolean dashboard,      // dashboard:view
+                         boolean salesEnabled) { // módulo de vendas ligado nas configurações do root
 
     public static RoleAccess of(String role) {
+        return of(role, true);
+    }
+
+    public static RoleAccess of(String role, boolean salesEnabled) {
         String r = role == null ? "" : role;
         boolean root = r.equals("root");
         return new RoleAccess(r,
@@ -31,20 +36,22 @@ public record RoleAccess(String role,
                 root,
                 root,
                 r.equals("students"),
-                root);
+                root,
+                salesEnabled);
     }
 
     public boolean isRoot() {
         return "root".equals(role);
     }
 
-    /** Página inicial depois do login. */
+    /** Aba Vendas: quem registra saídas, e só com o módulo ligado. */
+    public boolean sales() {
+        return exits && salesEnabled;
+    }
+
+    /** Página inicial depois do login: a consulta ao acervo, para todos os perfis. */
     public String homePath() {
-        if (dashboard) return "/dashboard";
-        if (student) return "/meus-emprestimos";
-        if (role.equals("loan_op")) return "/emprestimos";
-        if (role.equals("admin_users")) return "/usuarios";
-        return "/acervo";
+        return "/acervo/consulta";
     }
 
     /** Perfis do seed (permissions.sql), na ordem em que aparecem no cadastro. */

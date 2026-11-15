@@ -2,7 +2,7 @@
 <!-- ACERVO / CONSULTA: tela inicial de todos os perfis (sai da barra lateral e entra no submenu do acervo). -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title='Consultar acervo', active='acervo/consulta',
-                                       content=~{::content}, modals=~{})}">
+                                       content=~{::content}, modals=~{::modals})}">
 <body>
 <section th:fragment="content">
     <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / CONSULTA', title='Consultar acervo', actions=~{})}"></div>
@@ -16,35 +16,50 @@
 
     <th:block th:if="${resultado != null and not #lists.isEmpty(resultado.content())}">
         <p class="hint" th:text="|${resultado.totalElements()} títulos encontrados|">12 títulos encontrados</p>
-        <table class="data-table">
+        <!-- Disponibilidade e fila ficam no detalhe (modal). Livro sem exemplar disponível continua
+             na lista, acinzentado, com o aviso em texto (não só pela cor). Clicar na linha abre o detalhe. -->
+        <table class="data-table catalog-table">
             <thead>
             <tr>
                 <th>Título</th>
                 <th>Autor</th>
                 <th>Editora</th>
                 <th>Gênero</th>
-                <th>Disponíveis</th>
             </tr>
             </thead>
             <tbody>
-            <tr th:each="b : ${resultado.content()}">
-                <td><a th:href="@{/acervo/consulta/{isbn}(isbn=${b.isbn()})}" class="row-link" th:text="${b.title()}">Vidas Secas</a></td>
+            <tr th:each="b : ${resultado.content()}"
+                th:classappend="${b.availableCopies() == 0} ? 'unavailable'"
+                data-open-modal="modal-livro" th:data-modal-src="@{/acervo/consulta/{isbn}(isbn=${b.isbn()}, parcial=true)}"
+                th:data-title="${b.title()}">
+                <td>
+                    <!-- o link mantém o teclado e o "abrir em nova aba" funcionando -->
+                    <a th:href="@{/acervo/consulta/{isbn}(isbn=${b.isbn()})}" class="row-link" th:text="${b.title()}">Vidas Secas</a>
+                    <div class="row-note" th:if="${b.availableCopies() == 0}">Indisponível no momento</div>
+                </td>
                 <td th:text="${b.author()}">Graciliano Ramos</td>
                 <td th:text="${b.publisher()}">Record</td>
                 <td th:text="${b.genre()}">Romance</td>
-                <td>
-                    <span class="status-pill" th:classappend="${b.availableCopies() > 0} ? 'active' : 'inactive'"
-                          th:text="|${b.availableCopies()} de ${b.totalCopies()}|">2 de 3</span>
-                </td>
             </tr>
             </tbody>
         </table>
-        <nav th:replace="~{components/ui :: pagination(pg=${resultado}, url='/acervo/consulta')}"></nav>
+        <nav th:replace="~{components/ui :: pagination(pg=${resultado}, url=${paginaUrl})}"></nav>
     </th:block>
 
     <th:block th:if="${resultado != null and #lists.isEmpty(resultado.content())}">
         <div th:replace="~{components/ui :: empty(title='Nada encontrado', text='Tente outro título, autor ou gênero.')}"></div>
     </th:block>
 </section>
+
+<th:block th:fragment="modals">
+    <!-- corpo carregado na hora (data-modal-src), com o mesmo componente da página do livro -->
+    <dialog id="modal-livro" class="modal modal-lg" aria-labelledby="modal-livro-titulo">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-livro-titulo" data-modal-title>Livro</h2>
+            <button type="button" class="modal-close" data-close-modal aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body" data-modal-content>Carregando…</div>
+    </dialog>
+</th:block>
 </body>
 </html>

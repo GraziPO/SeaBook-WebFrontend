@@ -7,10 +7,12 @@
   Usada na baixa, na doação, na venda, no empréstimo, na movimentação e na reimpressão de etiquetas.
 
     <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares',
-                        submit='id', expect='AVAILABLE', price=false)}"></div>
+                        submit='code', expect='AVAILABLE', price=false)}"></div>
 
   name    nome do campo enviado (os valores vão um por linha, como no textarea de antes)
-  submit  'id' envia o ID do exemplar; 'code' envia o código da etiqueta (a movimentação usa o código)
+  submit  'code' envia o código da etiqueta (padrão do sistema: o controller converte em ID quando o
+          backend pede ID, e o modal consegue reabrir com a mesma lista depois de um erro);
+          'id' envia o ID do exemplar
   expect  situações aceitas, separadas por vírgula ('' aceita qualquer uma)
   price   mostra o preço de venda de cada exemplar e o total
 -->

@@ -10,8 +10,10 @@
  *   data-hint="..."             texto de ajuda             ([data-modal-hint])
  *   data-form-action="/url"     para onde o formulário envia
  *   data-f-<campo>="valor"      preenche o campo; data-f-depart-code -> name="departCode"
+ *   data-fields='{"a":"1"}'    preenche vários campos de uma vez (reabertura depois de um erro)
  *   data-readonly="a,b"         campos só leitura (ex.: o código, na edição)
  *   data-required="a,b"         campos obrigatórios neste caso (ex.: observação, na baixa)
+ *   data-modal-src="/url"       carrega o corpo do modal do servidor ([data-modal-content])
  *
  * data-auto-open: o botão (escondido) é "clicado" ao carregar a página. É assim que um modal
  * reabre depois de um erro, já com o que a pessoa tinha digitado e a mensagem do backend.
@@ -41,6 +43,16 @@
         return second.toLowerCase() + datasetKey.slice(2);
     }
 
+    function setField(form, name, value) {
+        var el = form.elements.namedItem(name);
+        if (!el) return;
+        if (el.type === 'checkbox') { el.checked = value === 'true'; return; }
+        el.value = value;
+        // lista de leitura (scan.js): recarrega as linhas com os códigos enviados
+        var scan = el.hasAttribute && el.hasAttribute('data-scan-value') && el.closest('[data-scan]');
+        if (scan && scan.scanLoad) setTimeout(function () { scan.scanLoad(value); }, 0);
+    }
+
     function openModal(trigger) {
         var dialog = document.getElementById(trigger.dataset.openModal);
         if (!dialog) return;
@@ -65,13 +77,16 @@
 
             Object.keys(trigger.dataset).forEach(function (key) {
                 var name = fieldName(key);
-                var el = name && form.elements.namedItem(name);
-                if (!el) return;
-                el.value = trigger.dataset[key];
-                // lista de leitura (scan.js): recarrega as linhas com os códigos enviados
-                var scan = el.hasAttribute('data-scan-value') && el.closest('[data-scan]');
-                if (scan && scan.scanLoad) setTimeout(function () { scan.scanLoad(trigger.dataset[key]); }, 0);
+                if (name) setField(form, name, trigger.dataset[key]);
             });
+            // data-fields='{"isbn":"...","title":"..."}': usado ao reabrir depois de um erro do backend
+            if (trigger.dataset.fields) {
+                var values = {};
+                try { values = JSON.parse(trigger.dataset.fields); } catch (e) { values = {}; }
+                Object.keys(values).forEach(function (name) {
+                    if (values[name] !== null && values[name] !== undefined) setField(form, name, String(values[name]));
+                });
+            }
         }
 
         setText(dialog, '[data-modal-title]', trigger.dataset.title);
@@ -82,12 +97,21 @@
         // a mensagem de erro só aparece quando o modal reabre por causa do erro
         dialog.querySelectorAll('[data-modal-error]').forEach(function (el) { el.hidden = !auto; });
 
+        // conteúdo carregado do servidor (ex.: detalhe do livro): mostra "Carregando…" e troca quando chegar
+        var target = dialog.querySelector('[data-modal-content]');
+        if (target && trigger.dataset.modalSrc) {
+            target.innerHTML = '<p class="muted">Carregando…</p>';
+            fetch(trigger.dataset.modalSrc, { headers: { 'X-Requested-With': 'fetch' } })
+                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+                .then(function (html) { target.innerHTML = html; })
+                .catch(function () {
+                    target.innerHTML = '<div class="alert alert-error">Não foi possível carregar agora. Tente de novo.</div>';
+                });
+        }
+
         dialog.showModal();
 
-        // atualiza contadores (leitor de código de barras) e põe o foco no primeiro campo editável
-        dialog.querySelectorAll('textarea[data-scan-count]').forEach(function (el) {
-            el.dispatchEvent(new Event('input'));
-        });
+        // põe o foco no primeiro campo editável
         var first = dialog.querySelector('input:not([type=hidden]):not([readonly]), textarea:not([readonly]), select');
         if (first) first.focus();
     }
@@ -97,6 +121,16 @@
         if (opener) {
             event.preventDefault();
             openModal(opener);
+            return;
+        }
+        // grupo do menu que só abre/fecha (sem trocar de tela)
+        var toggle = event.target.closest('[data-sidebar-toggle]');
+        if (toggle) {
+            var sub = document.getElementById(toggle.getAttribute('aria-controls'));
+            var open = toggle.getAttribute('aria-expanded') !== 'true';
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.classList.toggle('active', open);
+            if (sub) sub.hidden = !open;
             return;
         }
         var closer = event.target.closest('[data-close-modal]');

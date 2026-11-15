@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!--
+  RELATÓRIOS / DASHBOARD (só root, dashboard:view): números da organização no período escolhido.
+  Os gráficos são SVG desenhados no servidor com as coordenadas do DashboardCharts (sem biblioteca de gráfico).
+  Passar o mouse num dia do gráfico mostra a linha de referência e o tooltip com os números daquele dia.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Dashboard', active='relatorios/dashboard',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content" class="dash">
+
+    <div th:replace="~{components/ui :: pageHead(crumb='RELATÓRIOS / DASHBOARD', title='Dashboard', actions=~{::periodPicker})}"></div>
+    <p class="hint dash-updated" th:text="|Atualizado em ${#temporals.format(d.generatedAt(), 'dd/MM/yyyy ''às'' HH:mm')}|">Atualizado às 21:30</p>
+
+    <!-- ================= números principais ================= -->
+    <div class="stat-row dash-stats">
+        <a class="stat stat-link" th:href="@{/emprestimos(status='OPEN')}">
+            <div class="stat-value" th:text="${#numbers.formatInteger(k.openLoans(), 1, 'POINT')}">42</div>
+            <div class="stat-label">empréstimos em aberto</div>
+        </a>
+        <a class="stat stat-link" th:href="@{/emprestimos(status='OVERDUE')}" th:classappend="${k.delayedLoans() > 0} ? 'danger'">
+            <div class="stat-value" th:text="${#numbers.formatInteger(k.delayedLoans(), 1, 'POINT')}">3</div>
+            <div class="stat-label">atrasados</div>
+        </a>
+        <a class="stat stat-link" th:href="@{/usuarios(aba='alunos')}">
+            <div class="stat-value" th:text="${#numbers.formatInteger(k.activeStudents(), 1, 'POINT')}">310</div>
+            <div class="stat-label">alunos ativos</div>
+        </a>
+        <a class="stat stat-link" th:href="@{/relatorios/auditoria}">
+            <div class="stat-value" th:text="${#numbers.formatInteger(k.movementsInPeriod(), 1, 'POINT')}">128</div>
+            <div class="stat-label" th:text="|movimentações em ${period} dias|">movimentações</div>
+        </a>
+    </div>
+
+    <div class="dash-mini">
+        <div><span>Exemplares disponíveis</span>
+            <strong th:text="|${#numbers.formatInteger(k.availableCopies(), 1, 'POINT')} de ${#numbers.formatInteger(k.totalCopies(), 1, 'POINT')}|">820 de 1.040</strong></div>
+        <div th:if="${nav.salesEnabled()}"><span>Vendas no mês</span>
+            <strong th:text="|R$ ${#numbers.formatDecimal(k.sales(), 1, 'POINT', 2, 'COMMA')}|">R$ 0,00</strong></div>
+        <div><span>Comprovantes no mês</span>
+            <strong th:text="${#numbers.formatInteger(k.receiptsThisMonth(), 1, 'POINT')}">12</strong></div>
+        <div><span>Trocas de 1º acesso pendentes</span>
+            <strong th:text="${#numbers.formatInteger(k.pendingFirstAccess(), 1, 'POINT')}">4</strong></div>
+    </div>
+
+    <!-- ================= gráficos ================= -->
+    <div class="dash-grid dash-grid-8-4">
+        <article class="dash-card">
+            <header class="dash-card-head">
+                <h2>Empréstimos × devoluções por dia</h2>
+                <div class="legend">
+                    <span><span class="ln ln-loans"></span><span th:text="|Empréstimos (${line.totalLoans()})|">Empréstimos</span></span>
+                    <span><span class="ln ln-returns"></span><span th:text="|Devoluções (${line.totalReturns()})|">Devoluções</span></span>
+                </div>
+            </header>
+            <div class="dash-empty" th:if="${line.empty()}">Nenhum empréstimo ou devolução no período.</div>
+            <svg th:unless="${line.empty()}" class="line-chart" viewBox="0 0 640 220" role="img"
+                 th:attr="aria-label=|Gráfico de linhas: ${line.totalLoans()} empréstimos e ${line.totalReturns()} devoluções em ${period} dias|">
+                <g class="grid">
+                    <line th:each="t : ${line.ticks()}" x1="36" x2="632" th:attr="y1=${t.y()},y2=${t.y()}"></line>
+                </g>
+                <text th:each="t : ${line.ticks()}" class="axis" x="28" text-anchor="end"
+                      th:attr="y=${t.y() + 4}" th:text="${t.value()}">0</text>
+                <text th:each="l : ${line.labels()}" class="axis" y="214"
+                      th:attr="x=${l.x()},text-anchor=${l.anchor()}" th:text="${l.text()}">01/01</text>
+                <polygon class="area-loans" th:attr="points=${line.loansArea()}"></polygon>
+                <polyline class="line-returns" th:attr="points=${line.returnsLine()}"></polyline>
+                <polyline class="line-loans" th:attr="points=${line.loansLine()}"></polyline>
+                <th:block th:if="${line.peak() != null}">
+                    <text class="peak-label" text-anchor="middle"
+                          th:attr="x=${line.peak().x()},y=${line.peak().y() - 10}"
+                          th:text="|pico: ${line.peak().value()}|">pico</text>
+                </th:block>
+                <!-- hover: uma faixa por dia, maior que o ponto; mostra a linha vertical, os dois pontos e o tooltip -->
+                <g class="hover-day" th:each="h : ${line.days()}" tabindex="0" th:attr="aria-label=${h.tip()}">
+                    <title th:text="${h.tip()}">dia</title>
+                    <rect class="hit" y="10" height="186" th:attr="x=${h.hitX()},width=${h.hitW()}"></rect>
+                    <line class="crosshair" y1="10" y2="196" th:attr="x1=${h.x()},x2=${h.x()}"></line>
+                    <circle class="dot-returns" r="4.5" th:attr="cx=${h.x()},cy=${h.yReturns()}"></circle>
+                    <circle class="dot-loans" r="4.5" th:attr="cx=${h.x()},cy=${h.yLoans()}"></circle>
+                </g>
+            </svg>
+        </article>
+
+        <article class="dash-card">
+            <header class="dash-card-head"><h2>Exemplares por situação</h2></header>
+            <div class="dash-empty" th:if="${donut.isEmpty()}">Nenhum exemplar cadastrado.</div>
+            <div class="donut-wrap" th:unless="${donut.isEmpty()}">
+                <svg viewBox="0 0 140 140" width="160" height="160" role="img" aria-label="Rosca com a distribuição dos exemplares por situação">
+                    <g transform="rotate(-90 70 70)" fill="none" stroke-width="20">
+                        <circle th:each="s : ${donut.slices()}" cx="70" cy="70" r="54"
+                                th:attr="stroke=${s.color()},stroke-dasharray=${s.dashArray()},stroke-dashoffset=${s.dashOffset()}">
+                            <title th:text="|${s.label()}: ${s.quantity()} (${s.percent()}%)|">Disponível</title>
+                        </circle>
+                    </g>
+                    <text x="70" y="68" text-anchor="middle" class="donut-total"
+                          th:text="${#numbers.formatInteger(donut.total(), 1, 'POINT')}">0</text>
+                    <text x="70" y="86" text-anchor="middle" class="donut-caption">exemplares</text>
+                </svg>
+                <!-- a legenda é também a tabela: nome, % e quantidade (a cor nunca fica sozinha) -->
+                <ul class="donut-legend">
+                    <li th:each="s : ${donut.slices()}">
+                        <span class="sw" th:style="|background:${s.color()}|"></span>
+                        <span th:text="|${s.label()} (${s.percent()}%)|">Disponível</span>
+                        <strong th:text="${#numbers.formatInteger(s.quantity(), 1, 'POINT')}">0</strong>
+                    </li>
+                </ul>
+            </div>
+        </article>
+    </div>
+
+    <!-- ================= atrasados e departamentos ================= -->
+    <div class="dash-grid dash-grid-7-5">
+        <article class="dash-card" id="atrasados">
+            <header class="dash-card-head">
+                <h2>Empréstimos atrasados</h2>
+                <a th:href="@{/emprestimos(status='OVERDUE')}" th:text="|Ver todos (${k.delayedLoans()})|">Ver todos</a>
+            </header>
+            <div class="dash-empty" th:if="${#lists.isEmpty(d.delayedLoans())}">Nenhum empréstimo atrasado.</div>
+            <table class="data-table compact" th:unless="${#lists.isEmpty(d.delayedLoans())}">
+                <thead><tr><th>Nº</th><th>Aluno</th><th>Livros</th><th>Vencimento</th><th>Atraso</th></tr></thead>
+                <tbody>
+                <tr th:each="l : ${d.delayedLoans()}">
+                    <td class="mono" th:text="${l.loanId()}">1</td>
+                    <td><span th:text="${l.studentName()}">Aluno</span>
+                        <div class="muted" th:if="${l.ra()}" th:text="|RA ${l.ra()}|">RA</div></td>
+                    <td th:text="${l.copies()}">Título</td>
+                    <td th:text="${#temporals.format(l.dueDate(), 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td><span class="sev" th:classappend="|sev-${l.severity()}|"
+                              th:text="${l.delayedDays() == 1} ? '1 dia' : |${l.delayedDays()} dias|">1 dia</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </article>
+
+        <article class="dash-card">
+            <header class="dash-card-head"><h2>Ocupação por departamento</h2></header>
+            <p class="hint">Quanto dos exemplares de cada departamento está emprestado agora.</p>
+            <div class="dash-empty" th:if="${#lists.isEmpty(d.departmentOccupation())}">Nenhum departamento cadastrado.</div>
+            <div class="occ-row" th:each="o : ${d.departmentOccupation()}">
+                <div class="occ-text">
+                    <span th:text="${o.department()}">Departamento</span>
+                    <strong th:text="|${o.percent()}% · ${o.loaned()} de ${o.total()}|">0%</strong>
+                </div>
+                <div class="occ-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                     th:attr="aria-label=${o.department()},aria-valuenow=${o.percent()}">
+                    <div th:style="|width:${o.percent()}%|"></div>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <!-- ================= atividade, segurança e alunos ================= -->
+    <div class="dash-grid dash-grid-6-3-3">
+        <article class="dash-card">
+            <header class="dash-card-head">
+                <h2>Atividade recente</h2>
+                <a th:href="@{/relatorios/auditoria}">Ver logs</a>
+            </header>
+            <div class="dash-empty" th:if="${#lists.isEmpty(d.recentActivity())}">Nenhum registro ainda.</div>
+            <ul class="feed" th:unless="${#lists.isEmpty(d.recentActivity())}">
+                <li th:each="a : ${d.recentActivity()}">
+                    <span class="dot" aria-hidden="true"></span>
+                    <span>
+                        <strong class="mono" th:text="${a.action()}">ACAO</strong>
+                        <span th:if="${a.details()}" th:text="| · ${a.details()}|">detalhe</span>
+                        <small class="muted" th:text="|${a.username() ?: 'sistema'} · ${#temporals.format(a.timeStamp(), 'dd/MM HH:mm')}|">usuário · data</small>
+                    </span>
+                </li>
+            </ul>
+        </article>
+
+        <article class="dash-card">
+            <header class="dash-card-head"><h2>Segurança (24 h)</h2></header>
+            <div class="kv">
+                <div><span>Logins com sucesso</span><strong th:text="${seg.loginSuccess()}">0</strong></div>
+                <div><span>Falhas de login</span><strong th:classappend="${seg.loginFailure() > 0} ? 'warn'" th:text="${seg.loginFailure()}">0</strong></div>
+                <div><span>Falhas de MFA</span><strong th:classappend="${seg.mfaFailure() > 0} ? 'warn'" th:text="${seg.mfaFailure()}">0</strong></div>
+                <div><span>Acessos negados</span><strong th:text="${seg.accessDenied()}">0</strong></div>
+                <div><span>Senhas redefinidas</span><strong th:text="${seg.passwordResets()}">0</strong></div>
+            </div>
+        </article>
+
+        <article class="dash-card">
+            <header class="dash-card-head"><h2>Alunos</h2></header>
+            <div class="kv">
+                <div><span>Ativos</span><strong th:text="${#numbers.formatInteger(k.activeStudents(), 1, 'POINT')}">0</strong></div>
+                <div><span th:text="|Sem atividade há +${diasInatividade} dias|">Sem atividade</span>
+                    <strong th:classappend="${k.inactiveStudents() > 0} ? 'warn'" th:text="${#numbers.formatInteger(k.inactiveStudents(), 1, 'POINT')}">0</strong></div>
+                <p class="hint" th:text="|Nos últimos ${period} dias|">No período</p>
+                <div><span>Empréstimos</span><strong th:text="${k.loansInPeriod()}">0</strong></div>
+                <div><span>Devoluções</span><strong th:text="${k.returnsInPeriod()}">0</strong></div>
+                <div><span>Saídas (venda, doação, baixa)</span><strong th:text="${k.exitsInPeriod()}">0</strong></div>
+            </div>
+        </article>
+    </div>
+</section>
+
+<nav th:fragment="periodPicker" class="filter-tabs dash-period" aria-label="Período">
+    <a th:each="p : ${periods}" th:href="@{/dashboard(dias=${p})}"
+       th:classappend="${p == period} ? 'active'"
+       th:attr="aria-current=${p == period} ? 'page' : null"
+       th:text="${p == 365} ? 'Último ano' : |${p} dias|">30 dias</a>
+</nav>
+</body>
+</html>

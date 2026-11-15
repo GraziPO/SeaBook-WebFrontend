@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--
+  CONFIGURAÇÕES (só root): GET /api/configuracoes/detalhes agrupado em seções pelo controller.
+  Um formulário só; o backend valida os limites e registra o "antes -> depois" na auditoria.
+  Valores de segurança (bloqueio de login, MFA, sessão) ficam fora: só no application.yaml.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Organização', active='configuracoes/organizacao',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='CONFIGURAÇÕES / ORGANIZAÇÃO', title='Organização', actions=~{})}"></div>
+    <p class="page-intro">As mudanças valem na hora, sem reiniciar o sistema, e ficam registradas na auditoria.
+        Empréstimos já abertos mantêm o prazo com que foram feitos.</p>
+
+    <form th:action="@{/configuracoes}" method="post" class="settings">
+        <fieldset class="settings-section" th:each="secao : ${secoes}">
+            <legend th:text="${secao.title()}">Empréstimos</legend>
+
+            <div class="setting-row" th:each="s : ${secao.items()}">
+                <div class="setting-text">
+                    <label th:for="${'cfg-' + s.key()}" th:text="${s.label()}">Prazo do empréstimo (dias)</label>
+                    <div class="hint">
+                        <span th:if="${s.type() == 'INTEGER'}" th:text="|Entre ${s.min()} e ${s.max()} · padrão ${s.defaultValue()}|">Entre 1 e 90 · padrão 15</span>
+                        <span th:if="${s.type() == 'BOOLEAN'}" th:text="|Padrão: ${s.defaultBool() ? 'ligado' : 'desligado'}|">Padrão: ligado</span>
+                        <span th:if="${s.updatedBy() != null}"
+                              th:text="| · alterado por ${s.updatedBy()} em ${#temporals.format(s.updatedAt(), 'dd/MM/yyyy HH:mm')}|"> · alterado por root</span>
+                    </div>
+                </div>
+
+                <input th:if="${s.type() == 'INTEGER'}" th:id="${'cfg-' + s.key()}" class="setting-number"
+                       type="number" th:name="${s.key()}" th:value="${s.value()}" th:min="${s.min()}" th:max="${s.max()}" required>
+
+                <th:block th:if="${s.type() == 'BOOLEAN'}">
+                    <div th:replace="~{components/ui :: toggle(id=${'cfg-' + s.key()}, name=${s.key()}, checked=${s.bool()})}"></div>
+                </th:block>
+            </div>
+        </fieldset>
+
+        <div class="form-actions">
+            <button type="reset" class="btn-outline">Desfazer</button>
+            <button type="submit" class="btn-solid">Salvar configurações</button>
+        </div>
+    </form>
+</section>
+</body>
+</html>

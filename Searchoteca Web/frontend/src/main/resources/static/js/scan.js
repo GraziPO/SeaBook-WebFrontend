@@ -25,7 +25,7 @@
         return v == null ? '—' : 'R$ ' + Number(v).toFixed(2).replace('.', ',');
     }
 
-    /** Consulta padrão: GET <lookup>?codigo=X -> {copyId, code, title, author, status, salePrice} ou 404. */
+    /** Consulta padrão: GET <lookup>?codigo=X -> {copyId, copyIndex, code, title, author, status, salePrice} ou 404. */
     function defaultLookup(url, code) {
         return fetch(url + '?codigo=' + encodeURIComponent(code), { headers: { Accept: 'application/json' } })
             .then(function (r) {
@@ -148,7 +148,7 @@
                     tdBook.innerHTML = '<strong></strong><div class="muted"></div>';
                     tdBook.querySelector('strong').textContent = row.copy.title;
                     tdBook.querySelector('.muted').textContent =
-                        (row.copy.author || '') + ' · ID ' + row.copy.copyId;
+                        (row.copy.author || '') + ' · Exemplar ' + row.copy.copyIndex;
                 }
                 if (row.message) {
                     var msg = document.createElement('div');
@@ -211,7 +211,7 @@
             summary.classList.toggle('warn', problems > 0);
 
             hidden.value = ok.map(function (r) {
-                return submitById ? r.copy.copyId : r.code;
+                return submitById ? r.copy.copyId : ((r.copy && r.copy.code) || r.code);
             }).join('\n');
             box.dataset.scanReady = rows.length > 0 && problems === 0 ? 'true' : 'false';
         }
@@ -257,6 +257,10 @@
         };
 
         render();
+
+        // tela sem modal (ex.: Vendas) que voltou com erro: recarrega a lista enviada
+        var restore = box.closest('[data-scan-restore]');
+        if (restore && restore.dataset.scanRestore) box.scanLoad(restore.dataset.scanRestore);
     }
 
     document.querySelectorAll('[data-scan]').forEach(setup);

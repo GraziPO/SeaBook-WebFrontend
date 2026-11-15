@@ -1,8 +1,8 @@
 package searchoteca.frontend.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClientException;
@@ -10,7 +10,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import searchoteca.frontend.config.BackendMessages;
 import searchoteca.frontend.service.BackendService;
 
-/** Conta do usuário logado. */
+/**
+ * Alterar senha: agora é um modal do layout (botão no topo, em qualquer tela).
+ * Depois da troca, o backend invalida o token antigo (RF18): a sessão é encerrada e a pessoa entra de novo.
+ */
 @Controller
 public class AccountController {
 
@@ -20,28 +23,34 @@ public class AccountController {
         this.backendService = backendService;
     }
 
-    @GetMapping("/conta/senha")
-    public String changePasswordForm(Model model) {
-        model.addAttribute("dica", "A senha deve ter ao menos 8 caracteres, com letras e números.");
-        return "conta_senha";
-    }
-
     @PostMapping("/conta/senha")
     public String changePassword(@RequestParam String currentPassword,
                                  @RequestParam String newPassword,
                                  @RequestParam String confirmPassword,
-                                 RedirectAttributes redirectAttributes) {
+                                 @RequestParam(required = false) String returnTo,
+                                 HttpServletRequest request,
+                                 RedirectAttributes flash) {
         if (!newPassword.equals(confirmPassword)) {
-            redirectAttributes.addFlashAttribute("erro", "As duas senhas novas não são iguais.");
-            return "redirect:/conta/senha";
+            return failed(flash, "As duas senhas novas não são iguais.", returnTo);
         }
         try {
             backendService.changeOwnPassword(currentPassword, newPassword);
-            redirectAttributes.addFlashAttribute("info", "Senha alterada.");
         } catch (RestClientException ex) {
-            // Senha atual errada volta 409 (e não 401), então fica na tela
-            redirectAttributes.addFlashAttribute("erro", BackendMessages.forForm(ex, "Não foi possível alterar a senha."));
+            // senha atual errada volta 409 (e não 401): fica na tela, com o modal aberto
+            return failed(flash, BackendMessages.forForm(ex, "Não foi possível alterar a senha."), returnTo);
         }
-        return "redirect:/conta/senha";
+
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        flash.addFlashAttribute("info", "Senha alterada. Entre novamente com a senha nova.");
+        return "redirect:/login";
+    }
+
+    private static String failed(RedirectAttributes flash, String message, String returnTo) {
+        flash.addFlashAttribute("erroSenha", message);
+        flash.addFlashAttribute("abrirModal", "modal-senha");
+        return Redirects.back(returnTo, "/");
     }
 }

@@ -1,0 +1,82 @@
+package searchoteca.controller.archive;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import searchoteca.DTO.archive.LoanRequest;
+import searchoteca.auditTrail.AuditAction;
+import searchoteca.auditTrail.AuditLogService;
+import searchoteca.model.LoanModel;
+import searchoteca.security.CustomUserDetails;
+import searchoteca.service.LoanService;
+
+@RestController
+@RequestMapping("api/emprestimos")
+public class LoanController {
+    private final LoanService loanService;
+    private final AuditLogService auditLogService;
+
+
+    public LoanController(LoanService loanService, AuditLogService auditLogService) {
+        this.loanService = loanService;
+        this.auditLogService = auditLogService;
+    }
+
+    @PreAuthorize("hasAuthority('loans:view')")
+    @GetMapping
+    public ResponseEntity<?> findAll(@RequestParam(required = false) String status,
+                                     @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(loanService.findPage(status, page, size));
+    }
+
+    @PreAuthorize("hasAuthority('loans:view')")
+    @GetMapping("/{id}")
+    public ResponseEntity<?> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(loanService.findById(id));
+    }
+
+
+    //endpoint exclusivo para os alunos
+    @PreAuthorize("hasAuthority('loans:view_own')")
+    @GetMapping("/historico")
+    public ResponseEntity<?> findOwn(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size, Authentication authentication) {
+        CustomUserDetails student = (CustomUserDetails) authentication.getPrincipal();
+        auditLogService.record(AuditAction.ACCESS,"Acesso ao histórico do usuario");
+        return ResponseEntity.ok(loanService.findPageByStudent(student.getUserId(), page, size));
+    }
+
+    /** Área do aluno: os livros de todos os empréstimos dele, com título e exemplar. */
+    @PreAuthorize("hasAuthority('loans:view_own')")
+    @GetMapping("/historico/itens")
+    public ResponseEntity<?> ownItems(Authentication authentication) {
+        CustomUserDetails student = (CustomUserDetails) authentication.getPrincipal();
+        return ResponseEntity.ok(loanService.studentItems(student.getUserId()));
+    }
+
+    @PreAuthorize("hasAuthority('loans:create')")
+    @PostMapping
+    public ResponseEntity<?> create(@RequestBody LoanRequest request, Authentication auth) {
+        CustomUserDetails user = (CustomUserDetails) auth.getPrincipal();
+        auditLogService.save(user.getUsername(), AuditAction.CREATE,"emprestimo criado para RA "+ request.ra());
+        return ResponseEntity.ok(loanService.create(request, user));
+    }
+
+    @PreAuthorize("hasAuthority('loans:cancel')")
+    @PostMapping("{loan_id}/cancelar")
+    public ResponseEntity<?> cancel(@PathVariable Long loan_id, Authentication authentication) {
+        CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+        LoanModel loan = loanService.cancelLoan(loan_id,user.getUserId());
+        auditLogService.save(user.getUsername(), AuditAction.UPDATE,"registro de empréstimo" + "cancelado por "+ user.getUsername());
+        return ResponseEntity.ok(loan);
+    }
+
+    @PreAuthorize("hasAuthority('loans:return')")
+    @PostMapping("/devolucao/{copyId}")
+    public ResponseEntity<?> returnItem(@PathVariable Long copyId, Authentication authentication) {
+        CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+        LoanModel loan = loanService.returnItem(copyId,user.getUserId());
+        auditLogService.save(user.getUsername(), AuditAction.UPDATE,"registro de empréstimo" + "devolvido ao usuario "+ user.getUsername());
+        return ResponseEntity.ok(loan);
+    }
+}

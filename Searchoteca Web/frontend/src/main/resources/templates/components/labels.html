@@ -3,17 +3,51 @@
 <body>
 
 <!--
-  ETIQUETA DO EXEMPLAR (modelo novo): título, "ID · DEPARTAMENTO / LOCAL", código de barras e o código
-  em texto, uma vez só. Na impressão, cada etiqueta ocupa uma página do tamanho da etiqueta
-  (fila única vertical), que é como a impressora térmica de etiquetas trabalha.
-  O tamanho fica em app.css (--label-w e --label-h) e o @page "etiqueta" usa o mesmo valor.
+  ETIQUETA DO EXEMPLAR: título, "Exemplar N · DEPARTAMENTO / LOCAL", código de barras e o código em texto.
+  Modelo vertical (tudo empilhado) que se adapta ao tamanho escolhido na tela de etiquetas:
+  as letras e a altura das barras acompanham a etiqueta (container queries, em app.css).
 -->
 <div th:fragment="label(e)" class="copy-label">
     <div class="copy-label-title" th:text="${e.title()}" th:title="${e.title()}">Vidas Secas</div>
-    <div class="copy-label-meta" th:text="|ID ${e.copyId()} · ${e.departCode()} / ${e.localCode()}|">ID 743 · CIE / D1</div>
-    <svg class="barcode" th:attr="data-code=${e.code()}" role="img" th:aria-label="|Código de barras ${e.code()}|"></svg>
+    <div class="copy-label-meta" th:text="|Exemplar ${e.copyIndex()} · ${e.departCode()} / ${e.localCode()}|">Exemplar 2 · CIE / D1</div>
+    <div class="copy-label-bars">
+        <svg class="barcode" th:attr="data-code=${e.code()}" role="img" th:aria-label="|Código de barras ${e.code()}|"></svg>
+    </div>
     <div class="copy-label-code" th:text="${e.code()}">151616565615CIED13</div>
 </div>
+
+
+<!-- Escolha do tamanho (fica na tela de etiquetas; não sai na impressão). -->
+<form th:fragment="sizePicker" class="label-size no-print" data-label-size onsubmit="return false">
+    <div>
+        <label for="etq-tamanho">Tamanho da etiqueta</label>
+        <select id="etq-tamanho" name="preset">
+            <option value="40x25">40 × 25 mm</option>
+            <option value="50x30" selected>50 × 30 mm</option>
+            <option value="60x40">60 × 40 mm</option>
+            <option value="50x70">50 × 70 mm (vertical)</option>
+            <option value="100x50">100 × 50 mm</option>
+            <option value="custom">Outro tamanho…</option>
+        </select>
+    </div>
+    <div class="label-size-custom" data-label-custom hidden>
+        <div>
+            <label for="etq-largura">Largura (mm)</label>
+            <input id="etq-largura" type="number" name="width" min="25" max="120" step="1" value="50">
+        </div>
+        <div>
+            <label for="etq-altura">Altura (mm)</label>
+            <input id="etq-altura" type="number" name="height" min="15" max="120" step="1" value="30">
+        </div>
+    </div>
+    <div>
+        <label for="etq-dpi">Resolução da impressora</label>
+        <select id="etq-dpi" name="dpi">
+            <option value="203" selected>203 dpi (mais comum)</option>
+            <option value="300">300 dpi</option>
+        </select>
+    </div>
+</form>
 
 </body>
 </html>

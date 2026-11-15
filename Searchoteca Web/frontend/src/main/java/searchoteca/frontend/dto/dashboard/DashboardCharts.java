@@ -22,13 +22,18 @@ public final class DashboardCharts {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM");
 
-    /** Nome em português e cor de cada CopyStatus. As cores diferem também em claridade. */
+    /**
+     * Nome em português e cor de cada CopyStatus, sempre na mesma ordem (a cor segue o status, nunca a posição).
+     * Paleta conferida no validador de daltonismo (separação e claridade passam); como três cores ficam
+     * abaixo de 3:1 no fundo branco, a legenda ao lado da rosca mostra sempre o nome e o número.
+     */
     private static final Map<String, String[]> STATUS = Map.of(
-            "AVAILABLE",   new String[]{"Disponível", "#7A1620"},
-            "LOANED",      new String[]{"Emprestado", "#E0955C"},
-            "SOLD",        new String[]{"Vendido",    "#2F5D7C"},
-            "DONATED",     new String[]{"Doado",      "#9DB7C9"},
-            "WRITTEN_OFF", new String[]{"Baixado",    "#5E5452"});
+            "AVAILABLE",   new String[]{"Disponível", "#2a78d6"},
+            "LOANED",      new String[]{"Emprestado", "#eb6834"},
+            "RESERVED",    new String[]{"Reservado",  "#1baf7a"},
+            "SOLD",        new String[]{"Vendido",    "#eda100"},
+            "DONATED",     new String[]{"Doado",      "#e87ba4"},
+            "WRITTEN_OFF", new String[]{"Baixado",    "#008300"});
 
     private DashboardCharts() {}
 
@@ -38,13 +43,19 @@ public final class DashboardCharts {
     public record XLabel(double x, String text, String anchor) {}
     public record Peak(double x, double y, long value) {}
 
+    /**
+     * Faixa de um dia para o hover (crosshair + tooltip): hitX/hitW cobrem metade do espaço até os vizinhos,
+     * para o alvo ser maior que o ponto. tip é o texto do tooltip.
+     */
+    public record Day(double x, double hitX, double hitW, double yLoans, double yReturns, String tip) {}
+
     public record LineChart(String loansLine, String loansArea, String returnsLine,
                             List<Tick> ticks, List<XLabel> labels, Peak peak,
-                            long totalLoans, long totalReturns, boolean empty) {}
+                            long totalLoans, long totalReturns, boolean empty, List<Day> days) {}
 
     public static LineChart line(List<DashboardData.Diary> days) {
         if (days == null || days.isEmpty()) {
-            return new LineChart("", "", "", List.of(), List.of(), null, 0, 0, true);
+            return new LineChart("", "", "", List.of(), List.of(), null, 0, 0, true, List.of());
         }
         int n = days.size();
         long max = 1;
@@ -64,6 +75,8 @@ public final class DashboardCharts {
         StringBuilder returns = new StringBuilder();
         Peak peak = null;
         List<XLabel> labels = new ArrayList<>();
+        List<Day> hover = new ArrayList<>();
+        double stepX = n == 1 ? plotW : plotW / (n - 1);
         int labelStep = Math.max(1, (int) Math.ceil((n - 1) / 4.0));
 
         for (int i = 0; i < n; i++) {
@@ -73,6 +86,12 @@ public final class DashboardCharts {
             double yR = baseY - plotH * d.returns() / top;
             append(loans, x, yL);
             append(returns, x, yR);
+            double hitX = Math.max(PAD_LEFT, x - stepX / 2);
+            double hitEnd = Math.min(W - PAD_RIGHT, x + stepX / 2);
+            String dayText = d.day() == null ? "" : d.day().format(DAY);
+            hover.add(new Day(round(x), round(hitX), round(hitEnd - hitX), round(yL), round(yR),
+                    dayText + " · " + d.loans() + (d.loans() == 1 ? " empréstimo" : " empréstimos")
+                            + " · " + d.returns() + (d.returns() == 1 ? " devolução" : " devoluções")));
             if (d.loans() > 0 && (peak == null || d.loans() > peak.value())) {
                 peak = new Peak(round(x), round(yL), d.loans());
             }
@@ -96,7 +115,7 @@ public final class DashboardCharts {
                 new Tick(round(PAD_TOP), top));
 
         return new LineChart(loans.toString().trim(), area, returns.toString().trim(),
-                ticks, labels, peak, totalLoans, totalReturns, totalLoans + totalReturns == 0);
+                ticks, labels, peak, totalLoans, totalReturns, totalLoans + totalReturns == 0, hover);
     }
 
     // ------------------------------------------------------------------ rosca

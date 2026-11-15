@@ -17,15 +17,15 @@
     </p>
 
     <div class="form-card form-card-wide">
-        <form th:action="@{/vendas}" method="post" class="data-form">
+        <form th:action="@{/vendas}" method="post" class="data-form" th:data-scan-restore="${vendaCodigos}">
             <div class="field-full alert alert-error" th:if="${erroVenda}" th:text="${erroVenda}"></div>
 
             <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares vendidos',
-                                submit='id', expect='AVAILABLE', price=true)}"></div>
+                                submit='code', expect='AVAILABLE', price=true)}"></div>
 
             <div class="field-full">
                 <label for="venda-obs">Observações (opcional)</label>
-                <input id="venda-obs" type="text" name="notes" maxlength="255" placeholder="ex.: venda na feira do livro">
+                <input id="venda-obs" type="text" name="notes" maxlength="255" th:value="${vendaObs}" placeholder="ex.: venda na feira do livro">
             </div>
             <div class="form-actions">
                 <button type="reset" class="btn-outline">Limpar</button>

@@ -70,9 +70,9 @@
                     th:text="|${l.localCode} — ${l.localName} (${l.departCode})|">D1 — Estante 1 (CIE)</option>
         </select>
     </div>
-    <!-- a movimentação usa o código da etiqueta; aceita exemplar em qualquer situação -->
+    <!-- a movimentação usa o código da etiqueta; o backend só move exemplar disponível na estante -->
     <div th:replace="~{components/scan :: scanList(name='copyCodes', label='Exemplares',
-                        submit='code', expect='', price=false)}"></div>
+                        submit='code', expect='AVAILABLE', price=false)}"></div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
         <button type="submit" class="btn-solid">Movimentar e imprimir etiquetas</button>
@@ -80,8 +80,9 @@
 </form>
 
 <form th:fragment="reprintForm" th:action="@{/acervo/exemplares/etiquetas}" method="get" class="data-form">
-    <div th:replace="~{components/scan :: scanList(name='ids', label='Exemplares',
-                        submit='id', expect='', price=false)}"></div>
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div th:replace="~{components/scan :: scanList(name='codigos', label='Exemplares',
+                        submit='code', expect='', price=false)}"></div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
         <button type="submit" class="btn-solid">Gerar etiquetas</button>

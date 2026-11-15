@@ -46,16 +46,7 @@
         <button type="button" hidden data-auto-open data-open-modal="modal-comprovante"></button>
     </th:block>
 
-    <!-- depois de um erro: reabre com a mesma lista -->
-    <button type="button" hidden data-auto-open th:if="${reabrir != null}"
-            data-open-modal="modal-saida"
-            th:data-title="|Registrar ${#strings.toLowerCase(reabrir.option().label())}|"
-            th:data-hint="${reabrir.option().hint()}"
-            th:data-required="${reabrir.option().notesRequired()} ? 'notes' : ''"
-            data-submit-label="Confirmar saída"
-            th:data-f-type="${reabrir.option().key()}"
-            th:data-f-copy-ids="${reabrir.copyIds()}"
-            th:data-f-notes="${reabrir.notes()}"></button>
+    <!-- depois de um erro, o modal reabre com a mesma lista (ModalReopen, no layout) -->
 </th:block>
 
 <form th:fragment="exitForm" th:action="@{/saidas}" method="post" class="data-form">
@@ -64,7 +55,7 @@
     <p class="field-full modal-hint" data-modal-hint></p>
 
     <div th:replace="~{components/scan :: scanList(name='copyIds', label='Exemplares',
-                        submit='id', expect='AVAILABLE', price=false)}"></div>
+                        submit='code', expect='AVAILABLE', price=false)}"></div>
 
     <div class="field-full">
         <label for="saida-obs">Observações</label>
