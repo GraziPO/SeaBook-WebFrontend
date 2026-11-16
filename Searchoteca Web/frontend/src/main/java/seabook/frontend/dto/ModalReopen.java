@@ -15,25 +15,31 @@ import java.util.Map;
  * @param readonly    campos só leitura, separados por vírgula (ex.: o código, na edição)
  * @param required    campos obrigatórios neste caso, separados por vírgula
  * @param hint        texto de ajuda do modal (null mantém)
+ * @param message     texto de [data-modal-message] (null mantém)
  * @param fields      nome do campo -> valor
  */
 public record ModalReopen(String modal, String action, String title, String submitLabel,
-                          String readonly, String required, String hint, Map<String, String> fields) {
+                          String readonly, String required, String hint, String message,
+                          Map<String, String> fields) {
 
     public static ModalReopen of(String modal, Map<String, String> fields) {
-        return new ModalReopen(modal, null, null, null, null, null, null, fields);
+        return new ModalReopen(modal, null, null, null, null, null, null, null, fields);
     }
 
     public ModalReopen withAction(String action, String title, String submitLabel) {
-        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, fields);
+        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, message, fields);
     }
 
     public ModalReopen withReadonly(String readonly) {
-        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, fields);
+        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, message, fields);
+    }
+
+    public ModalReopen withMessage(String message, String hint) {
+        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, message, fields);
     }
 
     public ModalReopen withRequired(String required, String hint) {
-        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, fields);
+        return new ModalReopen(modal, action, title, submitLabel, readonly, required, hint, message, fields);
     }
 
     /** Map que aceita null (o Map.of não aceita). */

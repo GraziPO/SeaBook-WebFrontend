@@ -27,7 +27,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * ACERVO / EXEMPLARES: nova entrada, movimentação em lote e reimpressão, cada uma num modal.
+ * EXEMPLARES: nova entrada, movimentação em lote e reimpressão, cada uma num modal da tela de Livros
+ * (a entrada pela coluna "Exemplares" de cada livro; as outras duas pelos botões do topo).
  * As três terminam na mesma tela: a LISTA dos exemplares (exemplar, código, local, situação).
  * As etiquetas não aparecem na tela; existem na página só para a impressão (botão "Imprimir etiquetas").
  * A tela é aberta por endereço (?modo=entrada&codigos=...), então recarregar a página não perde a lista.
@@ -36,6 +37,7 @@ import java.util.Set;
 public class CopyController {
 
     private static final String PAGE = "/acervo/exemplares";
+    private static final String BOOKS = "/acervo/livros";
     private static final String LABELS = PAGE + "/etiquetas";
 
     /** Situação do exemplar (CopyStatus do backend) em português. */
@@ -55,10 +57,10 @@ public class CopyController {
         this.copyCodes = copyCodes;
     }
 
+    /** A tela Exemplares saiu do menu: entrada, movimentação e reimpressão ficam na tela de Livros. */
     @GetMapping(PAGE)
-    public String page(Model model) {
-        model.addAttribute("localizacoes", backendService.listLocal());
-        return "pages/exemplares";
+    public String page() {
+        return "redirect:" + BOOKS;
     }
 
     /**
@@ -83,6 +85,7 @@ public class CopyController {
     public String create(@RequestParam String isbn,
                          @RequestParam(defaultValue = "1") int quantity,
                          @RequestParam String localCode,
+                         @RequestParam(required = false) String returnTo,
                          RedirectAttributes flash) {
         try {
             // o backend pede o departamento junto; ele vem da localização escolhida
@@ -95,9 +98,10 @@ public class CopyController {
             return listRedirect("entrada", labels.stream().map(CopyLabel::code).toList());
         } catch (RestClientException ex) {
             flash.addFlashAttribute("erroModal", BackendMessages.forForm(ex, "Não foi possível cadastrar os exemplares."));
-            flash.addFlashAttribute("reabrirModal", ModalReopen.of("modal-entrada", ModalReopen.fields(
-                    "isbn", isbn, "quantity", String.valueOf(quantity), "localCode", localCode)));
-            return "redirect:" + PAGE;
+            flash.addFlashAttribute("reabrirModal", ModalReopen.of("modal-exemplares", ModalReopen.fields(
+                            "isbn", isbn, "quantity", String.valueOf(quantity), "localCode", localCode))
+                    .withMessage(bookName(isbn), "ISBN " + isbn));
+            return Redirects.back(returnTo, BOOKS);
         }
     }
 
@@ -119,14 +123,14 @@ public class CopyController {
             flash.addFlashAttribute("info", msg.toString());
             List<String> moved = result.labels() == null ? List.of()
                     : result.labels().stream().map(CopyLabel::code).toList();
-            if (moved.isEmpty()) return "redirect:" + PAGE;
+            if (moved.isEmpty()) return "redirect:" + BOOKS;
             return listRedirect("movimentacao", moved);
         } catch (IllegalArgumentException ex) {
             reopenMove(flash, ex.getMessage(), localCode, codes);
         } catch (RestClientException ex) {
             reopenMove(flash, BackendMessages.forForm(ex, "Não foi possível movimentar os exemplares."), localCode, codes);
         }
-        return "redirect:" + PAGE;
+        return "redirect:" + BOOKS;
     }
 
     private static void reopenMove(RedirectAttributes flash, String message, String localCode, List<String> codes) {
@@ -207,7 +211,18 @@ public class CopyController {
                 copies.size());
     }
 
-    private static String listRedirect(String mode, List<String> codes) {
+    /** Título do livro para o topo do modal reaberto; se não der para buscar, mostra só o ISBN. */
+    private String bookName(String isbn) {
+        try {
+            var book = backendService.getBook(isbn);
+            if (book != null && book.getTitle() != null) return book.getTitle();
+        } catch (RestClientException ex) {
+            // sem o título, o modal mostra só o ISBN
+        }
+        return "Livro";
+    }
+
+        private static String listRedirect(String mode, List<String> codes) {
         return "redirect:" + Pages.url(LABELS, "modo", mode, "codigos", String.join(",", codes));
     }
 
@@ -219,6 +234,6 @@ public class CopyController {
         } else {
             flash.addFlashAttribute("erro", message);
         }
-        return "redirect:" + PAGE;
+        return "redirect:" + BOOKS;
     }
 }

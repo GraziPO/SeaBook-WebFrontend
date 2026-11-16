@@ -37,6 +37,15 @@ public class BookController {
     public String list(@RequestParam(defaultValue = "0") int page, Model model) {
         model.addAttribute("pagina", backendService.listBooksPage(page));
         model.addAttribute("vendasAtivas", backendService.salesEnabled());
+        // localizações: cadastro de exemplares e movimentação em lote (modais desta tela)
+        try {
+            model.addAttribute("localizacoes", backendService.listLocal());
+        } catch (org.springframework.web.client.RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 401) throw ex;
+            model.addAttribute("localizacoes", java.util.List.of());
+        } catch (org.springframework.web.client.RestClientException ex) {
+            model.addAttribute("localizacoes", java.util.List.of());
+        }
         return "pages/livros";
     }
 

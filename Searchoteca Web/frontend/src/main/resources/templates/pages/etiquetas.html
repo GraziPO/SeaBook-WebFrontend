@@ -6,7 +6,7 @@
   o botão de lá fecha o modal e imprime (data-print="labels"), uma etiqueta por página.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title=${titulo}, active='acervo/exemplares',
+      th:replace="~{layout/app :: page(title=${titulo}, active='acervo/livros',
                                        content=~{::content}, modals=~{::modals})}">
 <body>
 <section th:fragment="content">
@@ -67,11 +67,11 @@
         </table>
         <p class="hint" th:if="${modo == 'entrada'}">
             Os exemplares já estão disponíveis para empréstimo. As etiquetas podem ser impressas agora
-            ou depois, em Exemplares &gt; Reimprimir etiquetas.</p>
+            ou depois, em Livros &gt; Reimprimir etiquetas.</p>
     </th:block>
 
     <th:block th:if="${#lists.isEmpty(exemplares)}">
-        <div th:replace="~{components/ui :: empty(title='Nenhum exemplar para mostrar', text='Leia os exemplares em Exemplares > Reimprimir etiquetas.')}"></div>
+        <div th:replace="~{components/ui :: empty(title='Nenhum exemplar para mostrar', text='Leia os exemplares em Livros > Reimprimir etiquetas.')}"></div>
     </th:block>
 
     <!-- só para a impressão: não aparece na tela -->
@@ -83,8 +83,7 @@
 </section>
 
 <th:block th:fragment="headActions">
-    <a th:href="@{/acervo/exemplares}" class="btn-outline"
-       th:text="${modo == 'entrada'} ? 'Nova entrada' : 'Voltar para Exemplares'">Nova entrada</a>
+    <a th:href="@{/acervo/livros}" class="btn-outline">Voltar para Livros</a>
     <button type="button" class="btn-solid" data-open-modal="modal-imprimir"
             th:if="${not #lists.isEmpty(etiquetas)}">Imprimir etiquetas</button>
 </th:block>
