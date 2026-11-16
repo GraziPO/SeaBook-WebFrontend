@@ -20,6 +20,13 @@ server:
 spring:
   application:
     name: frontend
+  web:
+    resources:
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
 
 # URL onde o backend (projeto SeaBook) está rodando.
 # No Railway: rede interna, ex. http://backend.railway.internal:8080 (variável BACKEND_BASE_URL)

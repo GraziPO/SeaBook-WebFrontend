@@ -10,8 +10,7 @@ Todas as telas já estão migradas.
 |---|---|---|---|
 | Acervo | Consulta (tela inicial, também sem login) | `/acervo/consulta`, detalhe `/acervo/consulta/{isbn}` | todos |
 | Acervo | Livros (busca do ISBN na Open Library, preço) | `/acervo/livros` | root, operadores |
-| Acervo | Departamentos | `/acervo/departamentos` | root, operadores |
-| Acervo | Localizações | `/acervo/localizacoes` | root, operadores |
+| Acervo | Departamentos e localizações (uma página por departamento) | `/acervo/departamentos?d=CODIGO` | root, operadores |
 | Acervo | Exemplares (entrada, movimentação, reimpressão) e etiquetas | `/acervo/exemplares`, `/acervo/exemplares/etiquetas` | root, operadores |
 | Empréstimos | Lista, novo empréstimo, devolução, cancelamento | `/emprestimos` | root, operador de empréstimo |
 | Meus empréstimos | Com você, fila de espera, histórico | `/meus-emprestimos` | aluno |
