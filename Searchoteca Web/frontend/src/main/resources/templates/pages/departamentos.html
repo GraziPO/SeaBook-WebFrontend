@@ -1,105 +1,197 @@
 <!DOCTYPE html>
 <!--
-  ACERVO / DEPARTAMENTOS
-  Antes: home_depart.html (lista) + search_depart.html (formulário de incluir/editar).
-  Agora: uma tela só. Incluir e editar usam o MESMO modal; excluir usa a confirmação global.
+  ACERVO / DEPARTAMENTOS (tela única de departamentos e localizações): uma página por departamento,
+  na ordem do código (?d=CODIGO). A tabela mostra as localizações dele; a última linha adiciona uma nova.
+  "Detalhes" abre um modal com os livros da localização e os exemplares disponíveis (data-modal-src).
+  Embaixo, só "Anterior" e "Próximo".
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title='Departamentos', active='acervo/departamentos',
                                        content=~{::content}, modals=~{::modals})}">
 <body>
 
-<!-- ===================================================================== miolo da tela -->
 <section th:fragment="content">
-
     <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / DEPARTAMENTOS', title='Departamentos', actions=~{::headActions})}"></div>
 
-    <th:block th:if="${not #lists.isEmpty(pagina.content())}">
+    <th:block th:if="${departamento != null}">
+        <!-- departamento da página -->
+        <div class="dept-head">
+            <div>
+                <h2 class="dept-title" th:text="|${departamento.departCode} — ${departamento.departName}|">D2 — Literatura</h2>
+                <div class="dept-meta">
+                    <th:block th:if="${departamento.departDesc}" th:text="|${departamento.departDesc} · |">Bloco B · </th:block>
+                    <th:block th:text="${#lists.size(locais) == 1} ? '1 localização' : |${#lists.size(locais)} localizações|">3 localizações</th:block>
+                </div>
+            </div>
+            <div class="dept-actions" th:if="${nav.manageArchive()}">
+                <button type="button" class="btn-edit"
+                        data-open-modal="modal-departamento"
+                        th:data-form-action="@{/acervo/departamentos/{c}/editar(c=${departamento.departCode})}"
+                        data-title="Editar departamento" data-submit-label="Salvar"
+                        data-readonly="departCode"
+                        th:data-f-depart-code="${departamento.departCode}"
+                        th:data-f-depart-name="${departamento.departName}"
+                        th:data-f-depart-desc="${departamento.departDesc}">Editar departamento</button>
+                <button type="button" class="btn-delete"
+                        data-open-modal="modal-confirmar"
+                        th:data-form-action="@{/acervo/departamentos/{c}/excluir(c=${departamento.departCode})}"
+                        data-title="Excluir departamento" data-submit-label="Excluir"
+                        th:data-message="|Excluir o departamento ${departamento.departCode} (${departamento.departName})? Só é possível se ele não tiver localizações nem exemplares.|">Excluir</button>
+            </div>
+        </div>
+
+        <!-- localizações do departamento -->
         <table class="data-table">
             <thead>
-            <tr>
-                <th>Código</th>
-                <th>Nome</th>
-                <th>Descrição</th>
-                <th th:if="${nav.manageArchive()}">Ações</th>
-            </tr>
+            <tr><th>Código</th><th>Nome</th><th>Descrição</th><th>Ações</th></tr>
             </thead>
             <tbody>
-            <tr th:each="d : ${pagina.content()}">
-                <td class="mono" th:text="${d.departCode}">EXA</td>
-                <td th:text="${d.departName}">Exatas</td>
-                <td th:text="${d.departDesc}">Bloco B</td>
-                <td class="actions-cell" th:if="${nav.manageArchive()}">
-                    <!-- editar: abre o modal já preenchido; o código não muda -->
-                    <button type="button" class="btn-edit"
-                            data-open-modal="modal-departamento"
-                            th:data-form-action="@{/acervo/departamentos/{c}/editar(c=${d.departCode})}"
-                            data-title="Editar departamento" data-submit-label="Salvar"
-                            data-readonly="departCode"
-                            th:data-f-depart-code="${d.departCode}"
-                            th:data-f-depart-name="${d.departName}"
-                            th:data-f-depart-desc="${d.departDesc}">Editar</button>
-                    <!-- excluir: confirmação global do layout -->
-                    <button type="button" class="btn-delete"
-                            data-open-modal="modal-confirmar"
-                            th:data-form-action="@{/acervo/departamentos/{c}/excluir(c=${d.departCode})}"
-                            data-title="Excluir departamento" data-submit-label="Excluir"
-                            th:data-message="|Excluir o departamento ${d.departCode} (${d.departName})? Só é possível se ele não tiver localizações nem exemplares.|">Excluir</button>
+            <tr th:each="l : ${locais}">
+                <td class="mono" th:text="${l.localCode}">LIT-E1</td>
+                <td th:text="${l.localName}">Literatura brasileira</td>
+                <td th:text="${l.localDesc}">Sala 2</td>
+                <td class="actions-cell">
+                    <button type="button" class="btn-details" data-open-modal="modal-local"
+                            th:data-title="${l.localName}"
+                            th:data-modal-src="@{/acervo/localizacoes/{c}/detalhes(c=${l.localCode})}">Detalhes</button>
+                    <th:block th:if="${nav.manageArchive()}">
+                        <button type="button" class="btn-edit" data-open-modal="modal-localizacao"
+                                th:data-form-action="@{/acervo/localizacoes/{c}/editar(c=${l.localCode})}"
+                                data-readonly="localCode"
+                                th:data-f-local-code="${l.localCode}" th:data-f-local-name="${l.localName}"
+                                th:data-f-depart-code="${l.departCode}" th:data-f-local-desc="${l.localDesc}">Editar</button>
+                        <button type="button" class="btn-delete" data-open-modal="modal-confirmar"
+                                th:data-form-action="@{/acervo/localizacoes/{c}/excluir(c=${l.localCode})}"
+                                data-title="Excluir localização" data-submit-label="Excluir"
+                                th:data-message="|Excluir a localização ${l.localCode}? Só é possível se não houver exemplares nela.|">Excluir</button>
+                    </th:block>
+                </td>
+            </tr>
+            <tr class="empty-row" th:if="${#lists.isEmpty(locais)}">
+                <td colspan="4">Nenhuma localização neste departamento ainda.</td>
+            </tr>
+            <!-- última linha: adicionar localização neste departamento -->
+            <tr class="add-row" th:if="${nav.manageArchive()}">
+                <td colspan="4">
+                    <button type="button" class="btn-add-row" data-open-modal="modal-localizacao-nova"
+                            th:data-f-depart-code="${departamento.departCode}"
+                            th:data-message="|${departamento.departCode} — ${departamento.departName}|">+ Adicionar localização</button>
                 </td>
             </tr>
             </tbody>
         </table>
 
-        <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url='/acervo/departamentos')}"></nav>
+        <!-- só "Anterior" e "Próximo" -->
+        <nav class="depart-pager" aria-label="Departamentos">
+            <a th:href="@{/acervo/departamentos(d=${anterior})}" class="pager-btn"
+               th:classappend="${anterior == null} ? 'disabled'" th:attr="aria-hidden=${anterior == null} ? 'true' : null">← Anterior</a>
+            <a th:href="@{/acervo/departamentos(d=${proximo})}" class="pager-btn"
+               th:classappend="${proximo == null} ? 'disabled'" th:attr="aria-hidden=${proximo == null} ? 'true' : null">Próximo →</a>
+        </nav>
     </th:block>
 
-    <th:block th:if="${#lists.isEmpty(pagina.content())}">
-        <div th:replace="~{components/ui :: empty(title='Nenhum departamento cadastrado', text='Inclua o primeiro departamento para começar.')}"></div>
+    <th:block th:if="${departamento == null}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum departamento cadastrado', text='Cadastre o primeiro departamento para começar.')}"></div>
     </th:block>
 </section>
 
-<!-- botão do cabeçalho -->
+<!-- topo: cadastrar departamento -->
 <button th:fragment="headActions" type="button" class="btn-solid" th:if="${nav.manageArchive()}"
         data-open-modal="modal-departamento"
         th:data-form-action="@{/acervo/departamentos}"
-        data-title="Incluir departamento" data-submit-label="Incluir">+ Incluir departamento</button>
-
+        data-title="Cadastrar departamento" data-submit-label="Cadastrar">+ Cadastrar departamento</button>
 
 <!-- ===================================================================== modais da tela -->
 <th:block th:fragment="modals">
-    <dialog th:replace="~{components/modal :: modal(id='modal-departamento', title='Incluir departamento', body=~{::departmentForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-departamento', title='Cadastrar departamento', body=~{::departmentForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-localizacao-nova', title='Adicionar localização', body=~{::newLocationForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-localizacao', title='Editar localização', body=~{::locationForm})}"></dialog>
 
-    <!-- depois de um erro, reabre o modal com o que a pessoa tinha digitado -->
-    <button type="button" hidden data-auto-open th:if="${reabrir != null}"
-            data-open-modal="modal-departamento"
-            th:data-form-action="${reabrir.action()}"
-            th:data-title="${reabrir.title()}"
-            th:data-submit-label="${reabrir.submitLabel()}"
-            th:data-readonly="${reabrir.editing()} ? 'departCode' : ''"
-            th:data-f-depart-code="${reabrir.department().departCode}"
-            th:data-f-depart-name="${reabrir.department().departName}"
-            th:data-f-depart-desc="${reabrir.department().departDesc}"></button>
+    <!-- detalhes da localização: o corpo vem do servidor (livro, ISBN e exemplares disponíveis) -->
+    <dialog id="modal-local" class="modal" aria-labelledby="modal-local-titulo">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-local-titulo" data-modal-title>Localização</h2>
+            <button type="button" class="modal-close" data-close-modal aria-label="Fechar">&times;</button>
+        </div>
+        <div class="modal-body" data-modal-content>Carregando…</div>
+    </dialog>
 </th:block>
 
-<!-- formulário único: incluir e editar (o modal troca título, action e botão) -->
+<!-- departamento: cadastrar e editar (o modal troca título, action e botão) -->
 <form th:fragment="departmentForm" method="post" th:action="@{/acervo/departamentos}" class="data-form">
     <input type="hidden" name="returnTo" th:value="${currentUri}">
     <div th:replace="~{components/ui :: modalError}"></div>
     <div>
         <label for="dep-codigo">Código</label>
-        <input id="dep-codigo" type="text" name="departCode" required maxlength="20" autocomplete="off">
+        <input id="dep-codigo" type="text" name="departCode" required maxlength="20" autocomplete="off" placeholder="ex.: D4">
     </div>
     <div>
         <label for="dep-nome">Nome</label>
-        <input id="dep-nome" type="text" name="departName" required maxlength="100">
+        <input id="dep-nome" type="text" name="departName" required maxlength="100" placeholder="ex.: Artes">
     </div>
     <div class="field-full">
         <label for="dep-descricao">Descrição</label>
-        <textarea id="dep-descricao" name="departDesc" rows="4"></textarea>
+        <textarea id="dep-descricao" name="departDesc" rows="3" required maxlength="100" placeholder="ex.: Bloco C, 1º andar"></textarea>
     </div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
-        <button type="submit" class="btn-solid" data-modal-submit>Incluir</button>
+        <button type="submit" class="btn-solid" data-modal-submit>Cadastrar</button>
+    </div>
+</form>
+
+<!-- localização nova: o departamento é o da página (fixo) -->
+<form th:fragment="newLocationForm" method="post" th:action="@{/acervo/localizacoes}" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <input type="hidden" name="departCode">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div>
+        <label for="locn-codigo">Código</label>
+        <input id="locn-codigo" type="text" name="localCode" required maxlength="20" autocomplete="off" placeholder="ex.: LIT-E4">
+    </div>
+    <div>
+        <label for="locn-nome">Nome</label>
+        <input id="locn-nome" type="text" name="localName" required maxlength="100" placeholder="ex.: Infantojuvenil">
+    </div>
+    <div class="field-full">
+        <span class="field-label">Departamento</span>
+        <div class="readonly-value" data-modal-message>D2 — Literatura</div>
+    </div>
+    <div class="field-full">
+        <label for="locn-descricao">Descrição</label>
+        <textarea id="locn-descricao" name="localDesc" rows="3" required maxlength="100" placeholder="ex.: Sala 2, perto da janela"></textarea>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Adicionar</button>
+    </div>
+</form>
+
+<!-- editar localização: dá para trocar de departamento -->
+<form th:fragment="locationForm" method="post" action="#" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${currentUri}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div>
+        <label for="loc-codigo">Código</label>
+        <input id="loc-codigo" type="text" name="localCode" required maxlength="20" autocomplete="off">
+    </div>
+    <div>
+        <label for="loc-nome">Nome</label>
+        <input id="loc-nome" type="text" name="localName" required maxlength="100">
+    </div>
+    <div class="field-full">
+        <label for="loc-depto">Departamento</label>
+        <select id="loc-depto" name="departCode" required>
+            <option th:each="d : ${departamentos}" th:value="${d.departCode}"
+                    th:text="|${d.departCode} — ${d.departName}|">D2 — Literatura</option>
+        </select>
+    </div>
+    <div class="field-full">
+        <label for="loc-descricao">Descrição</label>
+        <textarea id="loc-descricao" name="localDesc" rows="3" required maxlength="100"></textarea>
+    </div>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Salvar</button>
     </div>
 </form>
 

@@ -13,6 +13,7 @@ import seabook.frontend.dto.archive.BatchMoveResult;
 import seabook.frontend.dto.archive.CopyLabel;
 import seabook.frontend.dto.archive.CopyLookup;
 import seabook.frontend.dto.archive.CopyRequest;
+import seabook.frontend.dto.archive.LocationBookStock;
 import seabook.frontend.dto.archive.PriceRequest;
 import seabook.frontend.dto.auth.ChangePasswordRequest;
 import seabook.frontend.dto.catalog.PageResponse;
@@ -232,6 +233,14 @@ public class BackendService {
             if (current != null && current.content() != null) all.addAll(current.content());
         } while (current != null && current.hasNext());
         return all;
+    }
+
+    /** Livros da localização com total, disponíveis, emprestados e reservados. */
+    public List<LocationBookStock> localBooksStock(String localCode) {
+        return restClient.get()
+                .uri("/api/localizacao/{localCode}/estoque", localCode)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<LocationBookStock>>() {});
     }
 
     public Location getLocal(String localCode) {
