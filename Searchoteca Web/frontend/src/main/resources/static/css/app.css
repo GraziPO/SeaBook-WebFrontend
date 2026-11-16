@@ -793,3 +793,23 @@ button.sidebar-item {
 /* ---------- logo (imagem) ---------- */
 .topbar .logo { display: flex; align-items: center; }
 .topbar .logo img { display: block; height: 38px; width: auto; }
+
+/* ---------- lista de exemplares (depois do cadastro, da movimentação e na reimpressão) ---------- */
+.entry-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; max-width: 1080px; margin-bottom: 18px; }
+.copies-table td.code { font-family: ui-monospace, Consolas, monospace; letter-spacing: .02em; white-space: nowrap; }
+.copy-btn {
+    border: 1px solid var(--color-border); background: #fff; border-radius: 6px; padding: 3px 8px;
+    font-size: 12px; cursor: pointer; margin-left: 8px; color: var(--color-text-muted); font-family: var(--font-sans);
+}
+.copy-btn:hover, .copy-btn:focus-visible { border-color: var(--color-accent-soft); color: var(--color-accent); }
+.print-dialog-intro { margin: 0 0 12px; color: var(--color-text-muted); font-size: 14px; }
+.print-dialog-actions { margin-top: 18px; }
+
+/* as etiquetas existem na página só para a impressão */
+.label-roll.print-only { display: none; }
+@media print {
+    .label-roll.print-only { display: block; }
+    body:has(.label-roll.print-only) .content > :not(section),
+    body:has(.label-roll.print-only) .content section > :not(.label-roll) { display: none !important; }
+}
+@media (max-width: 860px) { .entry-summary { grid-template-columns: 1fr 1fr; } }

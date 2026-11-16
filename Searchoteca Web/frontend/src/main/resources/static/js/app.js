@@ -19,6 +19,8 @@
  * reabre depois de um erro, já com o que a pessoa tinha digitado e a mensagem do backend.
  * data-close-modal fecha o modal; data-print imprime só o modal aberto.
  * data-print="thermal" imprime no formato da impressora térmica (rolo de 80 mm: comprovante de venda).
+ * data-print="labels" fecha o modal e imprime só as etiquetas (lista de exemplares).
+ * data-copy="texto" copia o texto (o botão mostra "Copiado" por um instante).
  */
 (function () {
     'use strict';
@@ -139,7 +141,28 @@
             if (dialog) dialog.close();
             return;
         }
+        // copiar um texto (ex.: o código do exemplar na lista depois do cadastro)
+        var copier = event.target.closest('[data-copy]');
+        if (copier) {
+            var text = copier.dataset.copy;
+            var done = function () {
+                var old = copier.textContent;
+                copier.textContent = 'Copiado';
+                setTimeout(function () { copier.textContent = old; }, 1500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done, function () {});
+            }
+            return;
+        }
         var printer = event.target.closest('[data-print]');
+        // etiquetas: fecha o modal de tamanho antes, para sair só a fila de etiquetas
+        if (printer && printer.dataset.print === 'labels') {
+            var labelDialog = printer.closest('dialog');
+            if (labelDialog) labelDialog.close();
+            setTimeout(function () { window.print(); }, 50);
+            return;
+        }
         if (printer) {
             var thermal = printer.dataset.print === 'thermal';
             document.body.classList.toggle('print-thermal', thermal);

@@ -1,33 +1,109 @@
 <!DOCTYPE html>
 <!--
-  ETIQUETAS: fila única vertical, uma etiqueta por página do tamanho da etiqueta.
-  O tamanho é escolhido aqui e o layout se adapta (js/labels.js).
+  EXEMPLARES CADASTRADOS / MOVIMENTADOS / REIMPRESSÃO: lista dos exemplares com o código de cada um.
+  As etiquetas NÃO aparecem na tela: ficam na página só para a impressão (.label-roll.print-only).
+  "Imprimir etiquetas" abre um modal com o tamanho da etiqueta e a resolução (js/labels.js);
+  o botão de lá fecha o modal e imprime (data-print="labels"), uma etiqueta por página.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title='Etiquetas', active='acervo/exemplares',
-                                       content=~{::content}, modals=~{})}">
+      th:replace="~{layout/app :: page(title=${titulo}, active='acervo/exemplares',
+                                       content=~{::content}, modals=~{::modals})}">
 <body>
 <section th:fragment="content">
-    <div class="no-print">
-        <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / EXEMPLARES / ETIQUETAS', title=${titulo}, actions=~{::printButton})}"></div>
-        <form th:replace="~{components/labels :: sizePicker}"></form>
-        <p class="hint">Na janela de impressão, escolha a impressora térmica, margens "Nenhuma" e escala 100%.
-            O papel já vai no tamanho escolhido acima, uma etiqueta por página.</p>
-        <div class="alert alert-error" data-label-warn hidden></div>
+    <div th:replace="~{components/ui :: pageHead(crumb=${crumb}, title=${titulo}, actions=~{::headActions})}"></div>
+
+    <!-- resumo: livro e localização (entrada) ou destino (movimentação) -->
+    <div class="entry-summary panel-soft" th:if="${resumo != null}">
+        <div th:if="${resumo.bookTitle() != null}">
+            <div class="detail-label">Livro</div>
+            <div><strong th:text="${resumo.bookTitle()}">Vidas Secas</strong></div>
+            <div class="muted" th:text="${resumo.author()}">Graciliano Ramos</div>
+        </div>
+        <div th:if="${resumo.isbn() != null}">
+            <div class="detail-label">ISBN</div>
+            <div class="mono" th:text="${resumo.isbn()}">9788501002448</div>
+        </div>
+        <div>
+            <div class="detail-label" th:text="${modo == 'movimentacao'} ? 'Nova localização' : 'Localização'">Localização</div>
+            <div th:text="${resumo.localName() != null} ? |${resumo.localCode()} — ${resumo.localName()}| : ${resumo.localCode()}">D1 — Estante 1</div>
+            <div class="muted" th:text="${resumo.departName() != null} ? |${resumo.departCode()} — ${resumo.departName()}| : ${resumo.departCode()}">CIE — Ciências</div>
+        </div>
+        <div>
+            <div class="detail-label">Quantidade</div>
+            <div th:text="${resumo.quantity() == 1} ? '1 exemplar' : |${resumo.quantity()} exemplares|">3 exemplares</div>
+        </div>
     </div>
 
-    <div class="label-roll" th:if="${not #lists.isEmpty(etiquetas)}">
+    <th:block th:if="${not #lists.isEmpty(exemplares)}">
+        <table class="data-table copies-table">
+            <thead>
+            <tr>
+                <th>Exemplar</th>
+                <th th:if="${resumo == null or resumo.bookTitle() == null}">Livro</th>
+                <th>Código</th>
+                <th>Departamento</th>
+                <th>Localização</th>
+                <th>Situação</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${exemplares}">
+                <td th:text="|Exemplar ${c.copyIndex()}|">Exemplar 4</td>
+                <td th:if="${resumo == null or resumo.bookTitle() == null}">
+                    <strong th:text="${c.title()}">Vidas Secas</strong>
+                    <div class="muted" th:text="${c.author()}">Graciliano Ramos</div>
+                </td>
+                <td class="code">
+                    <span th:text="${c.code()}">151616565615CIED14</span>
+                    <button type="button" class="copy-btn" th:data-copy="${c.code()}"
+                            th:aria-label="|Copiar o código ${c.code()}|">Copiar</button>
+                </td>
+                <td th:text="${c.departCode()}">CIE</td>
+                <td th:text="${c.localCode()}">D1</td>
+                <td><span class="status-pill" th:classappend="${c.status() == 'AVAILABLE'} ? 'active' : 'open'"
+                          th:text="${statusLabels[c.status()] ?: c.status()}">Disponível</span></td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="hint" th:if="${modo == 'entrada'}">
+            Os exemplares já estão disponíveis para empréstimo. As etiquetas podem ser impressas agora
+            ou depois, em Exemplares &gt; Reimprimir etiquetas.</p>
+    </th:block>
+
+    <th:block th:if="${#lists.isEmpty(exemplares)}">
+        <div th:replace="~{components/ui :: empty(title='Nenhum exemplar para mostrar', text='Leia os exemplares em Exemplares > Reimprimir etiquetas.')}"></div>
+    </th:block>
+
+    <!-- só para a impressão: não aparece na tela -->
+    <div class="label-roll print-only" th:if="${not #lists.isEmpty(etiquetas)}" aria-hidden="true">
         <th:block th:each="e : ${etiquetas}">
             <div th:replace="~{components/labels :: label(${e})}"></div>
         </th:block>
     </div>
-
-    <th:block th:if="${#lists.isEmpty(etiquetas)}">
-        <div th:replace="~{components/ui :: empty(title='Nenhuma etiqueta para imprimir', text='Leia os exemplares em Exemplares > Reimprimir etiquetas.')}"></div>
-    </th:block>
 </section>
 
-<button th:fragment="printButton" type="button" class="btn-solid" data-print
-        th:if="${not #lists.isEmpty(etiquetas)}">Imprimir etiquetas</button>
+<th:block th:fragment="headActions">
+    <a th:href="@{/acervo/exemplares}" class="btn-outline"
+       th:text="${modo == 'entrada'} ? 'Nova entrada' : 'Voltar para Exemplares'">Nova entrada</a>
+    <button type="button" class="btn-solid" data-open-modal="modal-imprimir"
+            th:if="${not #lists.isEmpty(etiquetas)}">Imprimir etiquetas</button>
+</th:block>
+
+<th:block th:fragment="modals">
+    <dialog th:replace="~{components/modal :: modal(id='modal-imprimir', title='Imprimir etiquetas', body=~{::printForm})}"></dialog>
+</th:block>
+
+<div th:fragment="printForm">
+    <p class="print-dialog-intro"
+       th:text="|${#lists.size(etiquetas)} etiqueta${#lists.size(etiquetas) == 1 ? '' : 's'}, uma por página, no tamanho escolhido. Na janela de impressão, escolha a impressora térmica, margens &quot;Nenhuma&quot; e escala 100%.|">
+        3 etiquetas, uma por página.</p>
+    <form th:replace="~{components/labels :: sizePicker}"></form>
+    <div class="alert alert-error" data-label-warn hidden></div>
+    <div class="form-actions print-dialog-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="button" class="btn-solid" data-print="labels"
+                th:text="${#lists.size(etiquetas) == 1} ? 'Imprimir 1 etiqueta' : |Imprimir ${#lists.size(etiquetas)} etiquetas|">Imprimir 3 etiquetas</button>
+    </div>
+</div>
 </body>
 </html>

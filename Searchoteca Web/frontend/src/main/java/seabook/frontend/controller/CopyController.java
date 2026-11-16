@@ -17,20 +17,35 @@ import seabook.frontend.dto.archive.BatchMoveResult;
 import seabook.frontend.dto.archive.CopyLabel;
 import seabook.frontend.dto.archive.CopyLookup;
 import seabook.frontend.dto.archive.CopyRequest;
+import seabook.frontend.dto.archive.LabelSummary;
+import seabook.frontend.model.Department;
 import seabook.frontend.model.Location;
 import seabook.frontend.service.BackendService;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ACERVO / EXEMPLARES: nova entrada, movimentação em lote e reimpressão, cada uma num modal.
- * As três terminam na tela de etiquetas (fila única vertical, para a impressora térmica).
+ * As três terminam na mesma tela: a LISTA dos exemplares (exemplar, código, local, situação).
+ * As etiquetas não aparecem na tela; existem na página só para a impressão (botão "Imprimir etiquetas").
+ * A tela é aberta por endereço (?modo=entrada&codigos=...), então recarregar a página não perde a lista.
  */
 @Controller
 public class CopyController {
 
     private static final String PAGE = "/acervo/exemplares";
     private static final String LABELS = PAGE + "/etiquetas";
+
+    /** Situação do exemplar (CopyStatus do backend) em português. */
+    private static final java.util.Map<String, String> STATUS_LABELS = java.util.Map.of(
+            "AVAILABLE", "Disponível",
+            "LOANED", "Emprestado",
+            "RESERVED", "Reservado",
+            "SOLD", "Vendido",
+            "DONATED", "Doado",
+            "WRITTEN_OFF", "Baixado");
 
     private final BackendService backendService;
     private final CopyCodes copyCodes;
@@ -75,11 +90,9 @@ public class CopyController {
             String departCode = local == null ? null : local.getDepartCode();
             List<CopyLabel> labels = backendService.createCopies(
                     new CopyRequest(isbn.trim(), departCode, localCode, quantity));
-            flash.addFlashAttribute("etiquetas", labels);
-            flash.addFlashAttribute("titulo", "Etiquetas da nova entrada");
             flash.addFlashAttribute("info", labels.size() + (labels.size() == 1
-                    ? " exemplar cadastrado." : " exemplares cadastrados.") + " Confira o tamanho e imprima as etiquetas.");
-            return "redirect:" + LABELS;
+                    ? " exemplar cadastrado." : " exemplares cadastrados.") + " Os códigos estão na lista abaixo.");
+            return listRedirect("entrada", labels.stream().map(CopyLabel::code).toList());
         } catch (RestClientException ex) {
             flash.addFlashAttribute("erroModal", BackendMessages.forForm(ex, "Não foi possível cadastrar os exemplares."));
             flash.addFlashAttribute("reabrirModal", ModalReopen.of("modal-entrada", ModalReopen.fields(
@@ -104,9 +117,10 @@ public class CopyController {
                 msg.append(" Já estavam nessa localização: ").append(String.join(", ", result.alreadyInLocation())).append('.');
             }
             flash.addFlashAttribute("info", msg.toString());
-            flash.addFlashAttribute("etiquetas", result.labels() == null ? List.of() : result.labels());
-            flash.addFlashAttribute("titulo", "Etiquetas da movimentação");
-            return "redirect:" + LABELS;
+            List<String> moved = result.labels() == null ? List.of()
+                    : result.labels().stream().map(CopyLabel::code).toList();
+            if (moved.isEmpty()) return "redirect:" + PAGE;
+            return listRedirect("movimentacao", moved);
         } catch (IllegalArgumentException ex) {
             reopenMove(flash, ex.getMessage(), localCode, codes);
         } catch (RestClientException ex) {
@@ -121,31 +135,90 @@ public class CopyController {
                 "localCode", localCode, "copyCodes", FormParsing.join(codes))));
     }
 
-    // ---------------- etiquetas (entrada, movimentação e reimpressão) ----------------
+    // ---------------- lista de exemplares + impressão (entrada, movimentação e reimpressão) ----------------
 
+    /**
+     * modo: "entrada", "movimentacao" ou "reimpressao" (o formulário de reimpressão chega sem modo).
+     * codigos: os códigos das etiquetas, separados por vírgula ou um por linha.
+     */
     @GetMapping(LABELS)
-    public String labels(@RequestParam(required = false) String codigos, Model model, RedirectAttributes flash) {
-        if (!model.containsAttribute("etiquetas")) {
-            if (codigos == null || codigos.isBlank()) {
-                model.addAttribute("etiquetas", List.of());
-            } else {
-                try {
-                    model.addAttribute("etiquetas", backendService.findLabels(copyCodes.ids(codigos)));
-                } catch (IllegalArgumentException ex) {
-                    return reopenReprint(flash, ex.getMessage(), codigos);
-                } catch (RestClientException ex) {
-                    return reopenReprint(flash, BackendMessages.forForm(ex, "Não foi possível gerar as etiquetas."), codigos);
-                }
-            }
+    public String labels(@RequestParam(required = false) String codigos,
+                         @RequestParam(defaultValue = "reimpressao") String modo,
+                         Model model,
+                         RedirectAttributes flash) {
+        String mode = Set.of("entrada", "movimentacao").contains(modo) ? modo : "reimpressao";
+        model.addAttribute("modo", mode);
+        model.addAttribute("statusLabels", STATUS_LABELS);
+        model.addAttribute("titulo", switch (mode) {
+            case "entrada" -> "Exemplares cadastrados";
+            case "movimentacao" -> "Exemplares movimentados";
+            default -> "Reimpressão de etiquetas";
+        });
+        model.addAttribute("crumb", switch (mode) {
+            case "entrada" -> "ACERVO / EXEMPLARES / NOVA ENTRADA";
+            case "movimentacao" -> "ACERVO / EXEMPLARES / MOVIMENTAÇÃO";
+            default -> "ACERVO / EXEMPLARES / REIMPRESSÃO";
+        });
+
+        if (codigos == null || codigos.isBlank()) {
+            model.addAttribute("exemplares", List.of());
+            model.addAttribute("etiquetas", List.of());
+            return "pages/etiquetas";
         }
-        if (!model.containsAttribute("titulo")) model.addAttribute("titulo", "Reimpressão de etiquetas");
-        return "pages/etiquetas";
+        try {
+            // cada código vira o exemplar completo (com a situação) e a etiqueta para imprimir
+            List<CopyLookup> copies = copyCodes.resolve(codigos);
+            if ("entrada".equals(mode)) {
+                copies = copies.stream()
+                        .sorted(Comparator.comparing(CopyLookup::copyIndex, Comparator.nullsLast(Comparator.naturalOrder())))
+                        .toList();
+            }
+            List<CopyLabel> labels = backendService.findLabels(copies.stream().map(CopyLookup::copyId).toList());
+            model.addAttribute("exemplares", copies);
+            model.addAttribute("etiquetas", labels == null ? List.of() : labels);
+            model.addAttribute("resumo", summary(mode, copies));
+            return "pages/etiquetas";
+        } catch (IllegalArgumentException ex) {
+            return failure(mode, flash, ex.getMessage(), codigos);
+        } catch (RestClientException ex) {
+            return failure(mode, flash, BackendMessages.forForm(ex, "Não foi possível carregar os exemplares."), codigos);
+        }
     }
 
-    private static String reopenReprint(RedirectAttributes flash, String message, String codigos) {
-        flash.addFlashAttribute("erroModal", message);
-        flash.addFlashAttribute("reabrirModal", ModalReopen.of("modal-reimprimir", ModalReopen.fields(
-                "codigos", FormParsing.join(FormParsing.codes(codigos)))));
+    /** Entrada: livro + localização. Movimentação: localização de destino. Reimpressão: sem resumo. */
+    private LabelSummary summary(String mode, List<CopyLookup> copies) {
+        if (copies.isEmpty() || "reimpressao".equals(mode)) return null;
+        CopyLookup first = copies.get(0);
+        boolean sameBook = copies.stream().allMatch(c -> first.isbn() != null && first.isbn().equals(c.isbn()));
+        String localName = null, departName = null;
+        try {
+            Location local = backendService.getLocal(first.localCode());
+            if (local != null) localName = local.getLocalName();
+            Department depart = backendService.getDepart(first.departCode());
+            if (depart != null) departName = depart.getDepartName();
+        } catch (RestClientException ex) {
+            // sem os nomes, o resumo mostra só os códigos
+        }
+        return new LabelSummary(
+                sameBook ? first.title() : null,
+                sameBook ? first.author() : null,
+                sameBook ? first.isbn() : null,
+                first.localCode(), localName, first.departCode(), departName,
+                copies.size());
+    }
+
+    private static String listRedirect(String mode, List<String> codes) {
+        return "redirect:" + Pages.url(LABELS, "modo", mode, "codigos", String.join(",", codes));
+    }
+
+    private static String failure(String mode, RedirectAttributes flash, String message, String codigos) {
+        if ("reimpressao".equals(mode)) {
+            flash.addFlashAttribute("erroModal", message);
+            flash.addFlashAttribute("reabrirModal", ModalReopen.of("modal-reimprimir", ModalReopen.fields(
+                    "codigos", FormParsing.join(FormParsing.codes(codigos)))));
+        } else {
+            flash.addFlashAttribute("erro", message);
+        }
         return "redirect:" + PAGE;
     }
 }
