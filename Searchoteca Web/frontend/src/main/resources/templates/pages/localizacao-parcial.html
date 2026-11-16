@@ -1,0 +1,22 @@
+<!--/* Corpo do modal "Detalhes" da localização (GET /acervo/localizacoes/{codigo}/detalhes): livro, ISBN e disponíveis. */-->
+<div xmlns:th="http://www.thymeleaf.org" class="location-detail">
+    <p class="modal-sub">
+        <th:block th:text="${departamento != null} ? |${local.departCode} — ${departamento.departName}| : ${local.departCode}">D2 — Literatura</th:block>
+        · <span class="mono" th:text="${local.localCode}">LIT-E1</span>
+        · <th:block th:text="${#lists.size(livros) == 1} ? '1 título' : |${#lists.size(livros)} títulos|">4 títulos</th:block>
+    </p>
+    <table class="data-table modal-books" th:if="${not #lists.isEmpty(livros)}">
+        <thead><tr><th>Livro</th><th>ISBN</th><th class="num">Disponíveis</th></tr></thead>
+        <tbody>
+        <tr th:each="b : ${livros}">
+            <td><strong th:text="${b.title()}">Dom Casmurro</strong></td>
+            <td class="mono" th:text="${b.isbn()}">9788535914849</td>
+            <td class="num"><span class="avail-pill" th:classappend="${b.available() == 0} ? 'zero'" th:text="${b.available()}">2</span></td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="hint" th:if="${#lists.isEmpty(livros)}">Nenhum livro nesta localização ainda.</p>
+    <div class="form-actions modal-close-row">
+        <button type="button" class="btn-outline" data-close-modal>Fechar</button>
+    </div>
+</div>
