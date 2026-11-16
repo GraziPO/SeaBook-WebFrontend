@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+  MOVIMENTAÇÃO EM LOTE (1/2): busca da localização de origem.
+  A tabela mostra quantos exemplares estão na estante (só os disponíveis). Sem nada na estante,
+  a linha fica apagada e sem o botão. "Movimentar conteúdo" abre a tela das quantidades.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Movimentação em lote', active='acervo/movimentacoes',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <a th:href="@{/acervo/movimentacoes}" class="back-inline">← Voltar para Movimentações</a>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAÇÕES / EM LOTE', title='Movimentação em lote', actions=~{})}"></div>
+
+    <form th:action="@{/acervo/movimentacoes/lote}" method="get" class="search-hero" role="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+        <input type="search" name="busca" th:value="${busca}" aria-label="Buscar localização"
+               placeholder="Código, nome ou departamento da localização">
+        <button type="submit" class="btn-solid">Buscar</button>
+    </form>
+
+    <th:block th:if="${not #lists.isEmpty(pagina.content())}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nome</th>
+                <th>Departamento</th>
+                <th class="num">Na estante</th>
+                <th>Ações</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="l : ${pagina.content()}" th:classappend="${l.available() == 0} ? 'row-muted'">
+                <td class="mono" th:text="${l.localCode()}">LIT-E1</td>
+                <td th:text="${l.localName()}">Literatura brasileira</td>
+                <td>
+                    <span th:text="${l.departName() != null} ? ${l.departName()} : ${l.departCode()}">Literatura</span>
+                    <span class="muted mono" th:if="${l.departName() != null}" th:text="|(${l.departCode()})|">(LIT)</span>
+                </td>
+                <td class="num">
+                    <span class="avail-pill" th:classappend="${l.available() == 0} ? 'zero'" th:text="${l.available()}">7</span>
+                </td>
+                <td class="actions-cell">
+                    <a th:if="${l.available() > 0}" class="btn-details"
+                       th:href="@{/acervo/movimentacoes/lote/{c}(c=${l.localCode()})}">Movimentar conteúdo</a>
+                    <span th:if="${l.available() == 0}" class="muted">Nada na estante</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <nav th:replace="~{components/ui :: pagination(pg=${pagina}, url=${paginaUrl})}"></nav>
+    </th:block>
+
+    <th:block th:if="${#lists.isEmpty(pagina.content())}">
+        <div th:replace="~{components/ui :: empty(title='Nenhuma localização encontrada', text='Busque pelo código, pelo nome ou pelo departamento.')}"></div>
+    </th:block>
+</section>
+</body>
+</html>

@@ -14,6 +14,9 @@ import seabook.frontend.dto.archive.CopyLabel;
 import seabook.frontend.dto.archive.CopyLookup;
 import seabook.frontend.dto.archive.CopyRequest;
 import seabook.frontend.dto.archive.LocationBookStock;
+import seabook.frontend.dto.archive.LocationShelf;
+import seabook.frontend.dto.archive.QuantityMoveRequest;
+import seabook.frontend.dto.archive.QuantityMoveResult;
 import seabook.frontend.dto.archive.PriceRequest;
 import seabook.frontend.dto.auth.ChangePasswordRequest;
 import seabook.frontend.dto.catalog.PageResponse;
@@ -154,6 +157,15 @@ public class BackendService {
                 .body(BatchMoveResult.class);
     }
 
+    /** Movimentação em lote por quantidade: o backend escolhe quais exemplares vão e devolve os números. */
+    public QuantityMoveResult moveByQuantity(QuantityMoveRequest request) {
+        return restClient.post()
+                .uri("/api/exemplares/movimentacao/quantidade")
+                .body(request)
+                .retrieve()
+                .body(QuantityMoveResult.class);
+    }
+
     /** Exemplar pelo código da etiqueta. O backend responde 404 se não existir. */
     public CopyLookup lookupCopy(String code) {
         return restClient.get()
@@ -233,6 +245,18 @@ public class BackendService {
             if (current != null && current.content() != null) all.addAll(current.content());
         } while (current != null && current.hasNext());
         return all;
+    }
+
+    /** Tela Movimentações: localizações (busca por código, nome ou departamento) com os exemplares na estante. */
+    public PageResponse<LocationShelf> locationShelves(String busca, int page) {
+        return restClient.get()
+                .uri(uri -> uri.path("/api/localizacao/estantes")
+                        .queryParam("busca", busca == null ? "" : busca.trim())
+                        .queryParam("page", Math.max(page, 0))
+                        .queryParam("size", PAGE_SIZE)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<PageResponse<LocationShelf>>() {});
     }
 
     /** Livros da localização com total, disponíveis, emprestados e reservados. */

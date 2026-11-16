@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!--
+  MOVIMENTAÇÃO AVULSA: o operador lê a etiqueta de UM exemplar (o leitor "digita" e tecla Enter),
+  confere o livro e onde ele está, escolhe a nova localização e confirma.
+  A consulta do exemplar é a mesma da lista de leitura (GET /exemplares/consulta?codigo=X), feita pelo js/move.js.
+  Depois de mover, vai para a lista com o código novo e a impressão da etiqueta.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Movimentação avulsa', active='acervo/movimentacoes',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <a th:href="@{/acervo/movimentacoes}" class="back-inline">← Voltar para Movimentações</a>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAÇÕES / AVULSA', title='Movimentação avulsa', actions=~{})}"></div>
+
+    <form th:action="@{/acervo/movimentacoes/avulsa}" method="post" class="single-move" data-single-move
+          th:data-lookup="@{/exemplares/consulta}">
+        <div class="single-step">
+            <label for="avulsa-codigo" class="detail-label">1. Exemplar</label>
+            <div class="scan-input-row">
+                <svg class="scan-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5v14M7 5v14M11 5v14M14 5v14M18 5v14M21 5v14"></path></svg>
+                <input id="avulsa-codigo" type="text" name="copyCode" required autocomplete="off" spellcheck="false"
+                       autofocus data-single-code th:value="${codigoAnterior}"
+                       placeholder="Escaneie a etiqueta ou digite o código e tecle Enter">
+                <button type="button" class="btn-outline btn-small" data-single-find>Buscar</button>
+            </div>
+            <div class="scan-feedback" data-single-feedback aria-live="polite"></div>
+
+            <!-- preenchido pelo js/move.js depois da leitura -->
+            <div class="copy-card" data-single-card hidden>
+                <div>
+                    <div class="detail-label">Livro</div>
+                    <strong class="copy-card-title" data-c="title">Dom Casmurro</strong>
+                    <div class="muted" data-c="author">Machado de Assis</div>
+                </div>
+                <div>
+                    <div class="detail-label">Exemplar</div>
+                    <div data-c="index">Exemplar 4</div>
+                    <div class="mono muted" data-c="code">9788535914849LITE14</div>
+                </div>
+                <div>
+                    <div class="detail-label">Está em</div>
+                    <div class="mono" data-c="local">LIT-E1</div>
+                    <div class="muted" data-c="depart">LIT</div>
+                </div>
+                <div>
+                    <div class="detail-label">Situação</div>
+                    <span class="status-pill" data-c="status">Disponível</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="single-step">
+            <label for="avulsa-destino" class="detail-label">2. Nova localização</label>
+            <select id="avulsa-destino" name="localCode" required data-single-dest>
+                <option value="">Selecione…</option>
+                <option th:each="l : ${localizacoes}" th:value="${l.localCode}"
+                        th:selected="${l.localCode == destinoAnterior}"
+                        th:text="|${l.localCode} — ${l.localName} (${l.departCode})|">LIT-E2 — Literatura estrangeira (LIT)</option>
+            </select>
+        </div>
+
+        <div class="form-actions single-actions">
+            <a th:href="@{/acervo/movimentacoes}" class="btn-outline">Cancelar</a>
+            <button type="submit" class="btn-solid" data-single-submit>Movimentar</button>
+        </div>
+    </form>
+</section>
+</body>
+</html>

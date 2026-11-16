@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!--
+  MOVIMENTAÇÃO EM LOTE (2/2): "Movimentar conteúdo" de uma localização.
+  Para cada livro com exemplar na estante, a pessoa informa QUANTOS vão (0 até o que está na estante).
+  O backend escolhe QUAIS (do maior número para o menor) e a tela seguinte mostra
+  "Dom Casmurro — cópias 4 e 3 movimentadas", com os códigos novos e a impressão das etiquetas.
+  js/move.js: atalho "todos", aviso de linha acima do limite, total e botão desligado enquanto houver erro.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Movimentar conteúdo', active='acervo/movimentacoes',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <a th:href="@{/acervo/movimentacoes/lote}" class="back-inline">← Voltar para a busca</a>
+    <div th:replace="~{components/ui :: pageHead(crumb=|ACERVO / MOVIMENTAÇÕES / ${origem.localCode}|, title='Movimentar conteúdo', actions=~{})}"></div>
+
+    <form th:action="@{/acervo/movimentacoes/lote/{c}(c=${origem.localCode})}" method="post" data-batch-move>
+        <div class="move-head">
+            <div>
+                <div class="detail-label">De</div>
+                <div class="from-box">
+                    <strong th:text="|${origem.localCode} — ${origem.localName}|">LIT-E1 — Literatura brasileira</strong>
+                    <div class="muted"
+                         th:text="|${departamento != null ? departamento : origem.departCode} · ${naEstante} ${naEstante == 1 ? 'exemplar' : 'exemplares'} na estante|">
+                        Literatura · 7 exemplares na estante</div>
+                </div>
+            </div>
+            <div class="move-arrow" aria-hidden="true">→</div>
+            <div>
+                <label class="detail-label" for="lote-destino">Para</label>
+                <select id="lote-destino" name="localCode" required>
+                    <option value="">Selecione a nova localização…</option>
+                    <option th:each="l : ${destinos}" th:value="${l.localCode}"
+                            th:selected="${l.localCode == destinoAnterior}"
+                            th:text="|${l.localCode} — ${l.localName} (${l.departCode})|">LIT-E2 — Literatura estrangeira (LIT)</option>
+                </select>
+            </div>
+        </div>
+
+        <th:block th:if="${not #lists.isEmpty(livros)}">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>Livro</th>
+                    <th>ISBN</th>
+                    <th class="num">Na estante</th>
+                    <th>Quantidade a mover</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${livros}" data-qty-row>
+                    <td><strong th:text="${b.title()}">Dom Casmurro</strong><div class="muted" th:text="${b.author()}">Machado de Assis</div></td>
+                    <td class="mono" th:text="${b.isbn()}">9788535914849</td>
+                    <td class="num shelf-count" th:text="${b.available()}">3</td>
+                    <td>
+                        <input type="hidden" name="isbn" th:value="${b.isbn()}">
+                        <div class="qty">
+                            <input type="number" name="quantity" min="0" th:max="${b.available()}" step="1" inputmode="numeric"
+                                   th:value="${quantidadesAnteriores != null and quantidadesAnteriores[b.isbn()] != null} ? ${quantidadesAnteriores[b.isbn()]} : 0"
+                                   th:aria-label="|Quantidade de ${b.title()} a mover|" data-qty>
+                            <span class="max" th:text="|de ${b.available()}|">de 3</span>
+                            <button type="button" class="qty-all" data-qty-all>todos</button>
+                        </div>
+                        <div class="qty-err" data-qty-err hidden></div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="move-footer">
+                <div class="move-total" data-qty-total aria-live="polite"><strong>0</strong> exemplares selecionados</div>
+                <div class="move-footer-actions">
+                    <a th:href="@{/acervo/movimentacoes/lote}" class="btn-outline">Cancelar</a>
+                    <button type="submit" class="btn-solid" data-qty-submit>Movimentar</button>
+                </div>
+            </div>
+            <p class="hint">O sistema escolhe quais cópias vão (a de número mais alto primeiro) e mostra na próxima tela,
+                por exemplo: Dom Casmurro — cópias 4 e 3 movimentadas. O código de cada exemplar muda junto com a
+                localização; a próxima tela também traz os códigos novos e a impressão das etiquetas.</p>
+        </th:block>
+
+        <th:block th:if="${#lists.isEmpty(livros)}">
+            <div th:replace="~{components/ui :: empty(title='Nada na estante', text='Esta localização não tem exemplar disponível para movimentar.')}"></div>
+        </th:block>
+    </form>
+</section>
+</body>
+</html>
