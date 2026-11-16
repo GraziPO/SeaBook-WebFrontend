@@ -21,7 +21,7 @@ spring:
   application:
     name: frontend
 
-# URL onde o backend (projeto Searchoteca) está rodando.
+# URL onde o backend (projeto SeaBook) está rodando.
 # No Railway: rede interna, ex. http://backend.railway.internal:8080 (variável BACKEND_BASE_URL)
 backend:
   base-url: ${BACKEND_BASE_URL:http://localhost:8080}

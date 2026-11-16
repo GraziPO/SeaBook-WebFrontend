@@ -17,7 +17,7 @@
 
     var form = document.querySelector('[data-label-size]');
     var warn = document.querySelector('[data-label-warn]');
-    var STORE = 'searchoteca.etiqueta';
+    var STORE = 'seabook.etiqueta';
     var PAD_MM = 2.5;          // margem interna (lados)
 
     function load() {

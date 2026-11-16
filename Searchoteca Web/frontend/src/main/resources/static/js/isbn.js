@@ -1,8 +1,8 @@
 /*
  * Busca por ISBN no cadastro do livro (RF05). Botão [data-isbn-lookup] dentro do formulário:
- * consulta GET /acervo/livros/isbn?isbn=... (o frontend repassa para o backend, que pergunta à Open Library)
+ * consulta GET /acervo/livros/isbn?isbn=... (o frontend repassa para o backend, que pergunta à ISBNdb e, se preciso, à Open Library)
  * e preenche título, autor, ano, editora e gênero. O operador confere e salva. Nada é gravado na busca.
- *   200 preenche | 404 não encontrado | 409 ISBN inválido ou já cadastrado | 503 Open Library fora do ar
+ *   200 preenche | 404 não encontrado | 409 ISBN inválido ou já cadastrado | 503 bases de livros fora do ar
  * A consulta pode ser trocada (window.IsbnLookup) — a prévia usa dados de exemplo.
  */
 (function () {
@@ -34,7 +34,7 @@
         if (!value) { show('Digite ou leia o ISBN primeiro.', 'warn'); isbn.focus(); return; }
 
         button.disabled = true;
-        show('Consultando a Open Library…');
+        show('Buscando informações…');
         (window.IsbnLookup || defaultLookup)(button.dataset.isbnLookup || '/acervo/livros/isbn', value)
             .then(function (res) {
                 if (res.status === 200) {
@@ -42,14 +42,18 @@
                         var el = form.elements.namedItem(name);
                         if (el && res.body[name] != null) el.value = res.body[name];
                     });
-                    show('Dados preenchidos pela Open Library. Confira antes de salvar.', 'ok');
+                    show('Informações encontradas. Confira antes de salvar.', 'ok');
                     var title = form.elements.namedItem('title');
                     if (title) title.focus();
+                } else if (res.status === 409) {
+                    // ISBN inválido ou já cadastrado: a mensagem do backend diz o que corrigir
+                    show((res.body && res.body.message) || 'Confira o ISBN.', 'warn');
                 } else {
-                    show((res.body && res.body.message) || 'Não foi possível consultar. Preencha manualmente.', 'warn');
+                    // não encontrado (404) ou consulta fora do ar (503): para o operador, é a mesma coisa
+                    show('Informações não encontradas. Preencha os dados manualmente.', 'warn');
                 }
             })
-            .catch(function () { show('Não foi possível consultar agora. Preencha manualmente.', 'warn'); })
+            .catch(function () { show('Informações não encontradas. Preencha os dados manualmente.', 'warn'); })
             .then(function () { button.disabled = false; });
     });
 

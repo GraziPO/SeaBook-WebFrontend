@@ -2,7 +2,7 @@
 <!--
   CONFIGURAÇÕES / USUÁRIOS: abas Operadores, Alunos e Pedidos de conta, numa tela só.
   Modais: operador (novo/editar), aluno (novo), aluno (editar) e a decisão de um pedido (aprovar/recusar).
-  A senha inicial é a senha padrão da organização (INITIAL_PASSWORD) e é trocada no 1º acesso.
+  A senha inicial é automática (o usuário, para operador; o RA, para aluno) e é trocada no 1º acesso.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title='Usuários', active='configuracoes/usuarios',
@@ -195,7 +195,7 @@
         <input id="op-email" type="email" name="email" required maxlength="100">
         <div class="hint">O código de acesso (MFA) e a recuperação de senha chegam neste e-mail.</div>
     </div>
-    <p class="field-full modal-hint">A senha inicial é a <strong>senha padrão da organização</strong>. A pessoa é obrigada a trocá-la no primeiro acesso.</p>
+    <p class="field-full modal-hint">A senha inicial é o próprio <strong>usuário</strong>. A pessoa é obrigada a trocá-la no primeiro acesso.</p>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
         <button type="submit" class="btn-solid" data-modal-submit>Cadastrar</button>
@@ -225,7 +225,7 @@
         <label for="al-email">E-mail</label>
         <input id="al-email" type="email" name="email" required maxlength="100">
     </div>
-    <p class="field-full modal-hint">A senha inicial é a <strong>senha padrão da organização</strong>. O aluno é obrigado a trocá-la no primeiro acesso.</p>
+    <p class="field-full modal-hint">A senha inicial é o <strong>RA</strong>. O aluno é obrigado a trocá-la no primeiro acesso.</p>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
         <button type="submit" class="btn-solid">Cadastrar aluno</button>

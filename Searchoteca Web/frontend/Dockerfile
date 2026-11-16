@@ -1,5 +1,5 @@
 # =====================================================================
-# Imagem do frontend Searchoteca (Thymeleaf), usada pelo Railway.
+# Imagem do frontend SeaBook (Thymeleaf), usada pelo Railway.
 # Etapa 1 compila com o JDK; etapa 2 só roda o .jar com o JRE.
 # No Railway, o Root Directory do serviço é "Searchoteca Web/frontend" (onde fica este arquivo).
 # =====================================================================

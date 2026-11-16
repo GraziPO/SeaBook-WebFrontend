@@ -10,7 +10,7 @@
     --color-sidebar-active: #93202B;
     --color-accent: #7A1620;      /* botoes solidos, titulos */
     --color-accent-strong: #DC2626; /* cards LIVROS/DEPTOS/LOCALIZACOES */
-    --color-accent-soft: #E8998D;   /* faixa "Searchoteca" e cabecalho de tabela */
+    --color-accent-soft: #E8998D;   /* faixa "SeaBook" e cabecalho de tabela */
     --color-input-bg: #DCE3EA;
     --color-border: #E7C9C2;
     --color-text: #2B2320;
@@ -803,3 +803,6 @@ a { color: inherit; }
     .topbar { padding: 0 16px; }
     .topbar-user, .topbar-link { display: none; }
 }
+
+/* logo (imagem) nas telas de login, termos e erro */
+.auth-card .logo img { display: block; height: 56px; width: auto; margin: 0 auto; }

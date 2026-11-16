@@ -2,14 +2,17 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${documento.title()} + ' - Searchoteca'">Documento - Searchoteca</title>
+    <title th:text="${documento.title()} + ' - SeaBook'">Documento - SeaBook</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32.png}">
+    <link rel="apple-touch-icon" th:href="@{/images/apple-touch-icon.png}">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
 
 <div class="auth-wrapper">
     <div class="auth-card legal-card">
-        <span class="logo">Searchoteca</span>
+        <span class="logo"><img th:src="@{/images/seabook-logo.svg}" alt="SeaBook" width="244" height="56"></span>
         <h2 class="legal-heading">
             <span th:text="${documento.title()}">Documento</span>
             <small th:text="'versão ' + ${documento.version()}">versão 1.0</small>

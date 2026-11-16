@@ -4,7 +4,7 @@
 <body>
 <!-- ===================================================================== topo -->
 <header th:fragment="topbar" class="topbar">
-    <a th:href="@{/}" class="logo">Searchoteca</a>
+    <a th:href="@{/}" class="logo" aria-label="SeaBook, página inicial"><img th:src="@{/images/seabook-logo.svg}" alt="SeaBook" width="166" height="38"></a>
     <div class="topbar-right" th:if="${currentUser}">
         <div class="topbar-user">
             <span class="topbar-name" th:text="${currentUser}">usuário</span>
