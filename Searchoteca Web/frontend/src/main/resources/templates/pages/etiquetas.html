@@ -1,19 +1,36 @@
 <!DOCTYPE html>
 <!--
   EXEMPLARES CADASTRADOS / MOVIMENTADOS / REIMPRESSÃO: lista dos exemplares com o código de cada um.
+  Na movimentação, mostra antes o resumo por livro (quais cópias foram) e de onde para onde.
   As etiquetas NÃO aparecem na tela: ficam na página só para a impressão (.label-roll.print-only).
   "Imprimir etiquetas" abre um modal com o tamanho da etiqueta e a resolução (js/labels.js);
   o botão de lá fecha o modal e imprime (data-print="labels"), uma etiqueta por página.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title=${titulo}, active='acervo/livros',
+      th:replace="~{layout/app :: page(title=${titulo}, active=${ativo},
                                        content=~{::content}, modals=~{::modals})}">
 <body>
 <section th:fragment="content">
     <div th:replace="~{components/ui :: pageHead(crumb=${crumb}, title=${titulo}, actions=~{::headActions})}"></div>
 
+    <!-- movimentação: por livro, quais cópias foram ("Dom Casmurro — cópias 4 e 3 movimentadas") -->
+    <div class="moved-summary" th:if="${modo == 'movimentacao' and not #lists.isEmpty(movidos)}">
+        <div class="moved-route" th:if="${origem != null and resumo != null}">
+            <span class="mono" th:text="${origem}">LIT-E1</span>
+            <span class="moved-arrow" aria-label="para">→</span>
+            <span class="mono" th:text="${resumo.localCode()}">LIT-E2</span>
+            <span class="muted" th:if="${resumo.localName() != null}" th:text="${resumo.localName()}">Literatura estrangeira</span>
+        </div>
+        <ul class="moved-lines">
+            <li th:each="m : ${movidos}">
+                <strong th:text="${m.title()}">Dom Casmurro</strong>
+                <span> — </span><span th:text="${m.text()}">cópias 4 e 3 movimentadas</span>
+            </li>
+        </ul>
+    </div>
+
     <!-- resumo: livro e localização (entrada) ou destino (movimentação) -->
-    <div class="entry-summary panel-soft" th:if="${resumo != null}">
+    <div class="entry-summary panel-soft" th:if="${resumo != null and (modo != 'movimentacao' or #lists.isEmpty(movidos))}">
         <div th:if="${resumo.bookTitle() != null}">
             <div class="detail-label">Livro</div>
             <div><strong th:text="${resumo.bookTitle()}">Vidas Secas</strong></div>
@@ -22,6 +39,10 @@
         <div th:if="${resumo.isbn() != null}">
             <div class="detail-label">ISBN</div>
             <div class="mono" th:text="${resumo.isbn()}">9788501002448</div>
+        </div>
+        <div th:if="${modo == 'movimentacao' and origem != null}">
+            <div class="detail-label">Localização anterior</div>
+            <div class="mono" th:text="${origem}">LIT-E1</div>
         </div>
         <div>
             <div class="detail-label" th:text="${modo == 'movimentacao'} ? 'Nova localização' : 'Localização'">Localização</div>
@@ -83,7 +104,7 @@
 </section>
 
 <th:block th:fragment="headActions">
-    <a th:href="@{/acervo/livros}" class="btn-outline">Voltar para Livros</a>
+    <a th:href="@{${voltarUrl}}" class="btn-outline" th:text="${voltarTexto}">Voltar para Livros</a>
     <button type="button" class="btn-solid" data-open-modal="modal-imprimir"
             th:if="${not #lists.isEmpty(etiquetas)}">Imprimir etiquetas</button>
 </th:block>

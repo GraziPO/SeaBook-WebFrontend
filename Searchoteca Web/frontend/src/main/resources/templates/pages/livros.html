@@ -3,7 +3,7 @@
   ACERVO / LIVROS: lista + um modal para cadastrar/editar (com busca por ISBN: ISBNdb e Open Library)
   + um modal pequeno para o preço de venda (só root, com vendas ligadas)
   + um modal para cadastrar exemplares do livro (coluna "Exemplares"), que termina na lista de exemplares
-  + movimentação em lote e reimpressão de etiquetas (botões do topo; antes ficavam na tela Exemplares).
+  + reimpressão de etiquetas (botão do topo). A movimentação fica em Acervo > Movimentações.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title='Livros', active='acervo/livros',
@@ -73,8 +73,6 @@
 
 <th:block th:fragment="headActions">
     <th:block th:if="${nav.manageArchive()}">
-        <!-- antes ficavam na tela Exemplares (que saiu do menu) -->
-        <button type="button" class="btn-outline" data-open-modal="modal-movimentar">Movimentar em lote</button>
         <button type="button" class="btn-outline" data-open-modal="modal-reimprimir">Reimprimir etiquetas</button>
         <button type="button" class="btn-solid"
                 data-open-modal="modal-livro" th:data-form-action="@{/acervo/livros}"
@@ -86,7 +84,6 @@
     <dialog th:replace="~{components/modal :: modal(id='modal-livro', title='Cadastrar livro', body=~{::bookForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-preco', title='Preço de venda', body=~{::priceForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-exemplares', title='Cadastrar exemplares', body=~{::copiesForm})}"></dialog>
-    <dialog th:replace="~{components/modal :: modal(id='modal-movimentar', title='Movimentar em lote', body=~{::moveForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-reimprimir', title='Reimprimir etiquetas', body=~{::reprintForm})}"></dialog>
 </th:block>
 
@@ -166,25 +163,6 @@
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
         <button type="submit" class="btn-solid">Salvar preço</button>
-    </div>
-</form>
-
-<form th:fragment="moveForm" th:action="@{/acervo/exemplares/movimentacao}" method="post" class="data-form">
-    <div th:replace="~{components/ui :: modalError}"></div>
-    <div class="field-full">
-        <label for="mov-destino">Nova localização</label>
-        <select id="mov-destino" name="localCode" required>
-            <option value="">Selecione…</option>
-            <option th:each="l : ${localizacoes}" th:value="${l.localCode}"
-                    th:text="|${l.localCode} — ${l.localName} (${l.departCode})|">D1 — Estante 1 (CIE)</option>
-        </select>
-    </div>
-    <!-- a movimentação usa o código da etiqueta; o backend só move exemplar disponível na estante -->
-    <div th:replace="~{components/scan :: scanList(name='copyCodes', label='Exemplares',
-                        submit='code', expect='AVAILABLE', price=false)}"></div>
-    <div class="form-actions">
-        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
-        <button type="submit" class="btn-solid">Movimentar</button>
     </div>
 </form>
 

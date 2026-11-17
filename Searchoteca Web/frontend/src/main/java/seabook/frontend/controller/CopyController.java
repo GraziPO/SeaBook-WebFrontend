@@ -12,23 +12,25 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import seabook.frontend.config.BackendMessages;
 import seabook.frontend.dto.ModalReopen;
-import seabook.frontend.dto.archive.BatchMoveRequest;
-import seabook.frontend.dto.archive.BatchMoveResult;
 import seabook.frontend.dto.archive.CopyLabel;
 import seabook.frontend.dto.archive.CopyLookup;
 import seabook.frontend.dto.archive.CopyRequest;
 import seabook.frontend.dto.archive.LabelSummary;
+import seabook.frontend.dto.archive.MovedLine;
 import seabook.frontend.model.Department;
 import seabook.frontend.model.Location;
 import seabook.frontend.service.BackendService;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * EXEMPLARES: nova entrada, movimentação em lote e reimpressão, cada uma num modal da tela de Livros
- * (a entrada pela coluna "Exemplares" de cada livro; as outras duas pelos botões do topo).
+ * EXEMPLARES: nova entrada (coluna "Exemplares" de Livros) e reimpressão (botão do topo de Livros).
+ * A movimentação fica na tela Movimentações (MovementController).
  * As três terminam na mesma tela: a LISTA dos exemplares (exemplar, código, local, situação).
  * As etiquetas não aparecem na tela; existem na página só para a impressão (botão "Imprimir etiquetas").
  * A tela é aberta por endereço (?modo=entrada&codigos=...), então recarregar a página não perde a lista.
@@ -39,6 +41,7 @@ public class CopyController {
     private static final String PAGE = "/acervo/exemplares";
     private static final String BOOKS = "/acervo/livros";
     private static final String LABELS = PAGE + "/etiquetas";
+    private static final String MOVEMENTS = "/acervo/movimentacoes";
 
     /** Situação do exemplar (CopyStatus do backend) em português. */
     private static final java.util.Map<String, String> STATUS_LABELS = java.util.Map.of(
@@ -105,53 +108,34 @@ public class CopyController {
         }
     }
 
-    // ---------------- movimentação em lote ----------------
-
-    @PostMapping(PAGE + "/movimentacao")
-    public String move(@RequestParam String localCode,
-                       @RequestParam(defaultValue = "") String copyCodes,
-                       RedirectAttributes flash) {
-        List<String> codes = FormParsing.codes(copyCodes);
-        try {
-            if (codes.isEmpty()) throw new IllegalArgumentException("Leia ao menos um exemplar.");
-            BatchMoveResult result = backendService.moveCopies(new BatchMoveRequest(localCode, codes, codes.size()));
-            StringBuilder msg = new StringBuilder(result.moved() + (result.moved() == 1
-                    ? " exemplar movido para " : " exemplares movidos para ") + result.localCode() + ".");
-            if (result.alreadyInLocation() != null && !result.alreadyInLocation().isEmpty()) {
-                msg.append(" Já estavam nessa localização: ").append(String.join(", ", result.alreadyInLocation())).append('.');
-            }
-            flash.addFlashAttribute("info", msg.toString());
-            List<String> moved = result.labels() == null ? List.of()
-                    : result.labels().stream().map(CopyLabel::code).toList();
-            if (moved.isEmpty()) return "redirect:" + BOOKS;
-            return listRedirect("movimentacao", moved);
-        } catch (IllegalArgumentException ex) {
-            reopenMove(flash, ex.getMessage(), localCode, codes);
-        } catch (RestClientException ex) {
-            reopenMove(flash, BackendMessages.forForm(ex, "Não foi possível movimentar os exemplares."), localCode, codes);
-        }
-        return "redirect:" + BOOKS;
-    }
-
-    private static void reopenMove(RedirectAttributes flash, String message, String localCode, List<String> codes) {
-        flash.addFlashAttribute("erroModal", message);
-        flash.addFlashAttribute("reabrirModal", ModalReopen.of("modal-movimentar", ModalReopen.fields(
-                "localCode", localCode, "copyCodes", FormParsing.join(codes))));
-    }
-
     // ---------------- lista de exemplares + impressão (entrada, movimentação e reimpressão) ----------------
 
     /**
      * modo: "entrada", "movimentacao" ou "reimpressao" (o formulário de reimpressão chega sem modo).
      * codigos: os códigos das etiquetas, separados por vírgula ou um por linha.
+     * de / tipo (só na movimentação): a localização de onde os exemplares saíram e "avulsa" ou "lote",
+     * para o resumo por livro e o botão de voltar.
      */
     @GetMapping(LABELS)
     public String labels(@RequestParam(required = false) String codigos,
                          @RequestParam(defaultValue = "reimpressao") String modo,
+                         @RequestParam(required = false) String de,
+                         @RequestParam(required = false) String tipo,
                          Model model,
                          RedirectAttributes flash) {
         String mode = Set.of("entrada", "movimentacao").contains(modo) ? modo : "reimpressao";
+        boolean moving = "movimentacao".equals(mode);
         model.addAttribute("modo", mode);
+        model.addAttribute("ativo", moving ? "acervo/movimentacoes" : "acervo/livros");
+        if (moving) {
+            boolean single = "avulsa".equals(tipo);
+            model.addAttribute("voltarUrl", single ? MOVEMENTS + "/avulsa" : MOVEMENTS + "/lote");
+            model.addAttribute("voltarTexto", single ? "Nova movimentação avulsa" : "Voltar para Movimentações");
+            model.addAttribute("origem", de == null || de.isBlank() ? null : de.trim());
+        } else {
+            model.addAttribute("voltarUrl", BOOKS);
+            model.addAttribute("voltarTexto", "Voltar para Livros");
+        }
         model.addAttribute("statusLabels", STATUS_LABELS);
         model.addAttribute("titulo", switch (mode) {
             case "entrada" -> "Exemplares cadastrados";
@@ -160,7 +144,7 @@ public class CopyController {
         });
         model.addAttribute("crumb", switch (mode) {
             case "entrada" -> "ACERVO / EXEMPLARES / NOVA ENTRADA";
-            case "movimentacao" -> "ACERVO / EXEMPLARES / MOVIMENTAÇÃO";
+            case "movimentacao" -> "ACERVO / MOVIMENTAÇÕES";
             default -> "ACERVO / EXEMPLARES / REIMPRESSÃO";
         });
 
@@ -181,6 +165,7 @@ public class CopyController {
             model.addAttribute("exemplares", copies);
             model.addAttribute("etiquetas", labels == null ? List.of() : labels);
             model.addAttribute("resumo", summary(mode, copies));
+            if (moving) model.addAttribute("movidos", movedLines(copies));
             return "pages/etiquetas";
         } catch (IllegalArgumentException ex) {
             return failure(mode, flash, ex.getMessage(), codigos);
@@ -211,6 +196,25 @@ public class CopyController {
                 copies.size());
     }
 
+    /**
+     * Resumo da movimentação por livro, na ordem da lista: "Dom Casmurro — cópias 4 e 3 movimentadas".
+     * Os números são os escolhidos pelo backend (do maior para o menor) ou o exemplar lido na avulsa.
+     */
+    static List<MovedLine> movedLines(List<CopyLookup> copies) {
+        Map<String, List<CopyLookup>> byBook = new LinkedHashMap<>();
+        for (CopyLookup c : copies) {
+            String key = c.isbn() != null ? c.isbn() : String.valueOf(c.title());
+            byBook.computeIfAbsent(key, k -> new ArrayList<>()).add(c);
+        }
+        List<MovedLine> lines = new ArrayList<>();
+        for (List<CopyLookup> group : byBook.values()) {
+            CopyLookup first = group.get(0);
+            lines.add(MovedLine.of(first.title(), first.author(), first.isbn(),
+                    group.stream().map(CopyLookup::copyIndex).toList()));
+        }
+        return lines;
+    }
+
     /** Título do livro para o topo do modal reaberto; se não der para buscar, mostra só o ISBN. */
     private String bookName(String isbn) {
         try {
@@ -234,6 +238,6 @@ public class CopyController {
         } else {
             flash.addFlashAttribute("erro", message);
         }
-        return "redirect:" + BOOKS;
+        return "redirect:" + ("movimentacao".equals(mode) ? MOVEMENTS : BOOKS);
     }
 }

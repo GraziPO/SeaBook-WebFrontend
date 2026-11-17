@@ -22,7 +22,7 @@
 
 <!-- ===================================================================== menu lateral
      Ordem: Acervo, Empréstimos, Vendas, Saídas, Relatórios, Configurações.
-     active: "acervo/consulta", "acervo/livros", "emprestimos", "meus", "vendas", "saidas/registro",
+     active: "acervo/consulta", "acervo/livros", "acervo/departamentos", "acervo/movimentacoes", "emprestimos", "meus", "vendas", "saidas/registro",
              "saidas/comprovantes", "relatorios/dashboard", "relatorios/logs",
              "configuracoes/organizacao", "configuracoes/usuarios".
      Um grupo abre os subitens quando uma tela dele está ativa (ou ao clicar, no grupo que só tem modal).
@@ -41,6 +41,7 @@
         <th:block th:if="${nav.archive()}">
             <a th:href="@{/acervo/livros}" th:classappend="${act == 'acervo/livros'} ? 'active'">Livros</a>
             <a th:href="@{/acervo/departamentos}" th:classappend="${act == 'acervo/departamentos'} ? 'active'">Departamentos</a>
+            <a th:href="@{/acervo/movimentacoes}" th:classappend="${#strings.startsWith(act, 'acervo/movimentacoes')} ? 'active'">Movimentações</a>
         </th:block>
     </div>
 

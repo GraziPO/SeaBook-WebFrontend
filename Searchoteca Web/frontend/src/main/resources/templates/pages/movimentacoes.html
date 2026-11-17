@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<!--
+  ACERVO / MOVIMENTAÇÕES: escolha entre as duas formas de mover exemplares.
+    Avulsa  -> /acervo/movimentacoes/avulsa  (lê um exemplar e escolhe a nova localização)
+    Em lote -> /acervo/movimentacoes/lote    (busca a localização e move por quantidade)
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Movimentações', active='acervo/movimentacoes',
+                                       content=~{::content}, modals=~{})}">
+<body>
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAÇÕES', title='Movimentações', actions=~{})}"></div>
+
+    <p class="page-lead">Como você quer movimentar os exemplares?</p>
+
+    <div class="move-options">
+        <a class="move-option" th:href="@{/acervo/movimentacoes/avulsa}">
+            <span class="move-option-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M7 5v14M11 5v14M14 5v14M18 5v14M21 5v14"></path></svg>
+            </span>
+            <span class="move-option-title">Movimentação avulsa</span>
+            <span class="move-option-text">Leia a etiqueta de um exemplar e escolha a nova localização.
+                Bom para um livro que mudou de lugar.</span>
+            <span class="move-option-go">Começar →</span>
+        </a>
+        <a class="move-option" th:href="@{/acervo/movimentacoes/lote}">
+            <span class="move-option-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="6" rx="1"></rect><rect x="3" y="14" width="18" height="6" rx="1"></rect><path d="M12 10v4"></path></svg>
+            </span>
+            <span class="move-option-title">Movimentação em lote</span>
+            <span class="move-option-text">Escolha uma localização e diga quantos exemplares de cada livro vão
+                para outro lugar. O sistema escolhe as cópias e informa quais foram.</span>
+            <span class="move-option-go">Começar →</span>
+        </a>
+    </div>
+
+    <p class="hint">Nas duas formas só se move exemplar disponível na estante. O código do exemplar muda junto
+        com a localização, então a tela final traz os códigos novos e a impressão das etiquetas.</p>
+</section>
+</body>
+</html>
