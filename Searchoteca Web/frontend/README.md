@@ -85,6 +85,10 @@ o código enviado por e-mail e a troca obrigatória da senha. Em desenvolvimento
 | Acervo | Departamentos e localizações | `/acervo/departamentos` | root, operadores |
 | Acervo | Movimentações (avulsa e em lote) | `/acervo/movimentacoes` | root, operador de acervo |
 | Acervo | Etiquetas (entrada, movimentação, reimpressão) | `/acervo/exemplares/etiquetas` | root, operadores |
+=======
+| Acervo | Livros (busca do ISBN na Open Library, preço) | `/acervo/livros` | root, operadores |
+| Acervo | Departamentos e localizações (uma página por departamento) | `/acervo/departamentos?d=CODIGO` | root, operadores |
+| Acervo | Exemplares (entrada, movimentação, reimpressão) e etiquetas | `/acervo/exemplares`, `/acervo/exemplares/etiquetas` | root, operadores |
 | Empréstimos | Lista, novo empréstimo, devolução, cancelamento | `/emprestimos` | root, operador de empréstimo |
 | Meus empréstimos | Com você, fila de espera, histórico | `/meus-emprestimos` | aluno |
 | Vendas | Caixa com cupom (só com o módulo ligado) | `/vendas` | root, operador de empréstimo |
