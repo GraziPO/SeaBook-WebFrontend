@@ -45,7 +45,7 @@ public class LocationController {
     @GetMapping(LIST + "/{code}")
     public String detailPage(@PathVariable String code) {
         try {
-            Location local = backendService.getLocal(code);
+            Location local = backendService.publicLocal(code);
             if (local != null && local.getDepartCode() != null) {
                 return "redirect:" + Pages.url(DEPARTMENTS, "d", local.getDepartCode());
             }
@@ -58,14 +58,15 @@ public class LocationController {
     /** Corpo do modal "Detalhes" (carregado pelo js/app.js): livro, ISBN e exemplares disponíveis. */
     @GetMapping(LIST + "/{code}/detalhes")
     public String details(@PathVariable String code, Model model) {
-        Location local = backendService.getLocal(code);
+        // leitura pela rota pública: o modal abre também para visitante e aluno (só consulta)
+        Location local = backendService.publicLocal(code);
         Department depart = null;
         try {
-            if (local != null && local.getDepartCode() != null) depart = backendService.getDepart(local.getDepartCode());
+            if (local != null && local.getDepartCode() != null) depart = backendService.publicDepart(local.getDepartCode());
         } catch (RestClientException ex) {
             // sem o nome do departamento, o modal mostra só o código
         }
-        List<LocationBookStock> livros = backendService.localBooksStock(code);
+        List<LocationBookStock> livros = backendService.publicLocalBooks(code);
         model.addAttribute("local", local);
         model.addAttribute("departamento", depart);
         model.addAttribute("livros", livros == null ? List.of() : livros);

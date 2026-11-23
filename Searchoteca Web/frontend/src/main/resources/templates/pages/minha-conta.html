@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!--
+  CONFIGURAÇÕES / MINHA CONTA (todos os perfis): os dados que o sistema guarda sobre quem está logado
+  (GET /api/usuarios/me). O e-mail aparece completo: é o próprio titular consultando (LGPD, art. 18).
+  Para o aluno: histórico dos pedidos de conta e o pedido de desativação, que, aprovado pelo root,
+  anonimiza a conta (não dá para desfazer). Com pedido em análise, só aparece "Cancelar pedido".
+  A troca de senha é feita só aqui: o botão "Alterar senha" abre o modal global (components/forms).
+  Para corrigir nome ou e-mail, a pessoa fala com a administração (não há edição aqui de propósito:
+  o e-mail recebe o código do MFA, e a troca dele passa por quem administra os usuários).
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/app :: page(title='Minha conta', active='configuracoes/conta',
+                                       content=~{::content}, modals=~{::modals})}">
+<body>
+<section th:fragment="content">
+    <div th:replace="~{components/ui :: pageHead(crumb='CONFIGURAÇÕES / MINHA CONTA', title='Minha conta', actions=~{})}"></div>
+    <p class="page-intro">Estes são os dados que o SeaBook guarda sobre você. Se algo estiver errado,
+        procure a administração da biblioteca para corrigir.</p>
+
+    <th:block th:if="${conta != null}">
+        <!-- ------------------------------------------------------------ dados cadastrados -->
+        <div class="account-card">
+            <h2 class="account-card-title">Seus dados</h2>
+            <dl class="account-data">
+                <div>
+                    <dt>Nome completo</dt>
+                    <dd th:text="${conta.completeName()}">Ana Lima</dd>
+                </div>
+                <div>
+                    <dt>Usuário</dt>
+                    <dd class="mono" th:text="${conta.username()}">ana.lima</dd>
+                </div>
+                <div>
+                    <dt>E-mail</dt>
+                    <dd th:text="${conta.email()}">ana.lima@escola.com</dd>
+                </div>
+                <div>
+                    <dt>Perfil</dt>
+                    <dd th:text="${conta.roleLabel()}">Aluno</dd>
+                </div>
+                <div th:if="${conta.student()}">
+                    <dt>RA</dt>
+                    <dd class="mono" th:text="${conta.ra()}">2026001</dd>
+                </div>
+                <div th:if="${conta.student() and conta.phone() != null}">
+                    <dt>Telefone</dt>
+                    <dd th:text="${conta.phone()}">(11) 90000-0000</dd>
+                </div>
+                <div>
+                    <dt>Situação</dt>
+                    <dd><span class="status-pill" th:classappend="${conta.isActive()} ? 'active' : 'inactive'"
+                              th:text="${conta.isActive()} ? 'Ativa' : 'Desativada'">Ativa</span></dd>
+                </div>
+                <div th:if="${conta.student()}">
+                    <dt>Última movimentação</dt>
+                    <dd th:text="${conta.lastActivity() != null} ? ${#temporals.format(conta.lastActivity(), 'dd/MM/yyyy')} : 'Nenhuma ainda'">22/11/2026</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- ------------------------------------------------------------ segurança e termos -->
+        <div class="account-card">
+            <h2 class="account-card-title">Acesso e privacidade</h2>
+            <dl class="account-data">
+                <div>
+                    <dt>Senha</dt>
+                    <dd th:text="${conta.passwordChangedAt() != null}
+                                 ? |Alterada em ${#temporals.format(conta.passwordChangedAt(), 'dd/MM/yyyy ''às'' HH:mm')}|
+                                 : 'Senha inicial (ainda não foi trocada)'">Alterada em 10/11/2026 às 14:20</dd>
+                </div>
+                <div>
+                    <dt>Verificação em duas etapas</dt>
+                    <dd>Código enviado ao seu e-mail a cada login</dd>
+                </div>
+                <div>
+                    <dt>Termos de Uso e Política de Privacidade</dt>
+                    <dd th:if="${conta.termsAccepted()}"
+                        th:text="|Versão ${conta.termsVersion()} / ${conta.privacyVersion()}, aceita em ${#temporals.format(conta.termsAcceptedAt(), 'dd/MM/yyyy')}|">Versão 2.0 / 2.0, aceita em 02/11/2026</dd>
+                    <dd th:unless="${conta.termsAccepted()}">Ainda não aceitos</dd>
+                </div>
+            </dl>
+            <div class="account-links">
+                <button type="button" class="btn-outline btn-small" data-open-modal="modal-senha">Alterar senha</button>
+                <a th:href="@{/termos-de-uso}" target="_blank">Termos de Uso</a>
+                <a th:href="@{/politica-de-privacidade}" target="_blank">Política de Privacidade</a>
+            </div>
+        </div>
+
+        <!-- ------------------------------------------------------------ aluno: desativação -->
+        <th:block th:if="${conta.student()}">
+            <div class="account-card account-danger">
+                <h2 class="account-card-title">Desativar minha conta</h2>
+
+                <th:block th:if="${pedidoPendente != null}">
+                    <p>
+                        <span class="status-pill open">Em análise</span>
+                        Você pediu a desativação em
+                        <strong th:text="${#temporals.format(pedidoPendente.createdAt(), 'dd/MM/yyyy')}">20/11/2026</strong>.
+                        Enquanto a administração não decide, a conta continua funcionando normalmente.
+                    </p>
+                    <form th:action="@{/conta/desativacao/cancelar}" method="post">
+                        <button type="submit" class="btn-outline">Cancelar pedido</button>
+                    </form>
+                </th:block>
+
+                <th:block th:if="${pedidoPendente == null}">
+                    <p>Você pode pedir o encerramento da sua conta. O pedido é analisado pela administração e, se aprovado:</p>
+                    <ul class="account-list">
+                        <li>seus dados pessoais (nome, e-mail, RA e telefone) são <strong>apagados de forma definitiva</strong> (anonimização);</li>
+                        <li>você perde o acesso e sai das filas de espera;</li>
+                        <li>o histórico de empréstimos continua existindo, sem identificar você;</li>
+                        <li><strong>não é possível desfazer</strong>: para voltar a usar a biblioteca, será preciso um cadastro novo.</li>
+                    </ul>
+                    <p class="hint">Antes de pedir, devolva todos os livros que estão com você.</p>
+                    <button type="button" class="btn-delete" data-open-modal="modal-desativacao">Pedir desativação</button>
+                </th:block>
+            </div>
+
+            <h2 class="section-title">Meus pedidos</h2>
+            <table class="data-table" th:if="${not #lists.isEmpty(pedidos)}">
+                <thead><tr><th>Pedido</th><th>Enviado em</th><th>Motivo</th><th>Situação</th><th>Resposta</th></tr></thead>
+                <tbody>
+                <tr th:each="p : ${pedidos}">
+                    <td th:text="${p.typeLabel()}">Desativação</td>
+                    <td th:text="${p.createdAt() != null} ? ${#temporals.format(p.createdAt(), 'dd/MM/yyyy HH:mm')} : '—'">20/11/2026 10:30</td>
+                    <td th:text="${p.reason() != null} ? ${p.reason()} : '—'">Vou mudar de escola</td>
+                    <td><span class="status-pill" th:classappend="${p.pillClass()}" th:text="${p.statusLabel()}">Pendente</span></td>
+                    <td>
+                        <span th:if="${p.decisionNote() != null}" th:text="${p.decisionNote()}">observação</span>
+                        <div class="muted" th:if="${p.decidedAt() != null}"
+                             th:text="|em ${#temporals.format(p.decidedAt(), 'dd/MM/yyyy')}|">em 21/11/2026</div>
+                        <span th:if="${p.decisionNote() == null and p.decidedAt() == null}">—</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <p class="hint" th:if="${#lists.isEmpty(pedidos)}">Você ainda não fez nenhum pedido.</p>
+        </th:block>
+    </th:block>
+</section>
+
+<th:block th:fragment="modals">
+    <th:block th:if="${conta != null and conta.student() and pedidoPendente == null}">
+        <dialog th:replace="~{components/modal :: modal(id='modal-desativacao', title='Pedir desativação da conta', body=~{::deactivationForm})}"></dialog>
+    </th:block>
+</th:block>
+
+<form th:fragment="deactivationForm" th:action="@{/conta/desativacao}" method="post" class="data-form">
+    <p class="field-full modal-hint">O pedido vai para a administração. Se for aprovado, seus dados pessoais
+        são apagados de forma definitiva e a conta não pode ser reativada.</p>
+    <div class="field-full">
+        <label for="desativacao-motivo">Motivo (opcional)</label>
+        <textarea id="desativacao-motivo" name="reason" rows="3" maxlength="255"
+                  placeholder="ex.: concluí o curso, vou mudar de escola"></textarea>
+    </div>
+    <label class="field-full account-confirm">
+        <input type="checkbox" name="confirm" value="true" required>
+        Entendo que, se aprovado, a desativação apaga meus dados pessoais e não pode ser desfeita.
+    </label>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-delete">Enviar pedido</button>
+    </div>
+</form>
+</body>
+</html>

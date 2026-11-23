@@ -9,8 +9,8 @@
                                        content=~{::content}, modals=~{})}">
 <body>
 <section th:fragment="content">
-    <a th:href="@{/acervo/movimentacoes}" class="back-inline">← Voltar para Movimentações</a>
-    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAÇÕES / EM LOTE', title='Movimentação em lote', actions=~{})}"></div>
+    <a th:href="@{/acervo/movimentacoes}" class="back-inline">← Voltar para Movimentar Itens</a>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAR ITENS / EM LOTE', title='Movimentação em lote', actions=~{})}"></div>
 
     <form th:action="@{/acervo/movimentacoes/lote}" method="get" class="search-hero" role="search">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>

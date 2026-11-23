@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <!--
   EXEMPLARES CADASTRADOS / MOVIMENTADOS / REIMPRESSÃO: lista dos exemplares com o código de cada um.
+  Na movimentação não há impressão: o código (ISBN + número do exemplar) não muda de uma localização
+  para outra, então a etiqueta colada no livro continua valendo.
   Na movimentação, mostra antes o resumo por livro (quais cópias foram) e de onde para onde.
   As etiquetas NÃO aparecem na tela: ficam na página só para a impressão (.label-roll.print-only).
-  "Imprimir etiquetas" abre um modal com o tamanho da etiqueta e a resolução (js/labels.js);
-  o botão de lá fecha o modal e imprime (data-print="labels"), uma etiqueta por página.
+  "Imprimir etiquetas" imprime direto (data-print="labels"): uma etiqueta por página, tamanho fixo
+  de 50 × 30 mm (js/labels.js).
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title=${titulo}, active=${ativo},
-                                       content=~{::content}, modals=~{::modals})}">
+                                       content=~{::content}, modals=~{})}">
 <body>
 <section th:fragment="content">
     <div th:replace="~{components/ui :: pageHead(crumb=${crumb}, title=${titulo}, actions=~{::headActions})}"></div>
@@ -88,15 +90,22 @@
         </table>
         <p class="hint" th:if="${modo == 'entrada'}">
             Os exemplares já estão disponíveis para empréstimo. As etiquetas podem ser impressas agora
-            ou depois, em Livros &gt; Reimprimir etiquetas.</p>
+            ou depois, em Controle de Títulos &gt; Reimprimir etiquetas.</p>
     </th:block>
 
     <th:block th:if="${#lists.isEmpty(exemplares)}">
-        <div th:replace="~{components/ui :: empty(title='Nenhum exemplar para mostrar', text='Leia os exemplares em Livros > Reimprimir etiquetas.')}"></div>
+        <div th:replace="~{components/ui :: empty(title='Nenhum exemplar para mostrar', text='Leia os exemplares em Controle de Títulos > Reimprimir etiquetas.')}"></div>
     </th:block>
 
+    <div class="alert alert-error" data-label-warn hidden th:if="${modo != 'movimentacao'}"></div>
+    <p class="hint" th:if="${modo == 'movimentacao' and not #lists.isEmpty(exemplares)}">
+        As etiquetas continuam as mesmas: o código do exemplar não muda quando ele troca de localização.</p>
+    <p class="hint" th:if="${modo != 'movimentacao' and not #lists.isEmpty(etiquetas)}">
+        Etiquetas de 50 × 30 mm, uma por página. Na janela de impressão, escolha a impressora de etiquetas,
+        margens "Nenhuma" e escala 100%.</p>
+
     <!-- só para a impressão: não aparece na tela -->
-    <div class="label-roll print-only" th:if="${not #lists.isEmpty(etiquetas)}" aria-hidden="true">
+    <div class="label-roll print-only" th:if="${modo != 'movimentacao' and not #lists.isEmpty(etiquetas)}" aria-hidden="true">
         <th:block th:each="e : ${etiquetas}">
             <div th:replace="~{components/labels :: label(${e})}"></div>
         </th:block>
@@ -105,25 +114,10 @@
 
 <th:block th:fragment="headActions">
     <a th:href="@{${voltarUrl}}" class="btn-outline" th:text="${voltarTexto}">Voltar para Livros</a>
-    <button type="button" class="btn-solid" data-open-modal="modal-imprimir"
-            th:if="${not #lists.isEmpty(etiquetas)}">Imprimir etiquetas</button>
+    <button type="button" class="btn-solid" data-print="labels"
+            th:if="${modo != 'movimentacao' and not #lists.isEmpty(etiquetas)}"
+            th:text="${#lists.size(etiquetas) == 1} ? 'Imprimir 1 etiqueta' : |Imprimir ${#lists.size(etiquetas)} etiquetas|">Imprimir etiquetas</button>
 </th:block>
 
-<th:block th:fragment="modals">
-    <dialog th:replace="~{components/modal :: modal(id='modal-imprimir', title='Imprimir etiquetas', body=~{::printForm})}"></dialog>
-</th:block>
-
-<div th:fragment="printForm">
-    <p class="print-dialog-intro"
-       th:text="|${#lists.size(etiquetas)} etiqueta${#lists.size(etiquetas) == 1 ? '' : 's'}, uma por página, no tamanho escolhido. Na janela de impressão, escolha a impressora térmica, margens &quot;Nenhuma&quot; e escala 100%.|">
-        3 etiquetas, uma por página.</p>
-    <form th:replace="~{components/labels :: sizePicker}"></form>
-    <div class="alert alert-error" data-label-warn hidden></div>
-    <div class="form-actions print-dialog-actions">
-        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
-        <button type="button" class="btn-solid" data-print="labels"
-                th:text="${#lists.size(etiquetas) == 1} ? 'Imprimir 1 etiqueta' : |Imprimir ${#lists.size(etiquetas)} etiquetas|">Imprimir 3 etiquetas</button>
-    </div>
-</div>
 </body>
 </html>

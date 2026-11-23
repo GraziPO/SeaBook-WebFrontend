@@ -18,6 +18,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/primeiro-acesso",
                         // recuperação de senha
                         "/esqueci-senha", "/redefinir-senha",
+                        // pedido de reativação de conta desativada (a conta não consegue entrar)
+                        "/reativacao",
                         // consulta pública ao acervo (consulta sem login); os endereços antigos redirecionam
                         "/acervo/consulta", "/acervo/consulta/**", "/consulta", "/consulta/**",
                         // arquivos estáticos

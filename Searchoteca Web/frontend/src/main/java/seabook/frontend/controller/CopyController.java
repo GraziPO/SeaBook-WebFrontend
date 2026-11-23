@@ -130,11 +130,11 @@ public class CopyController {
         if (moving) {
             boolean single = "avulsa".equals(tipo);
             model.addAttribute("voltarUrl", single ? MOVEMENTS + "/avulsa" : MOVEMENTS + "/lote");
-            model.addAttribute("voltarTexto", single ? "Nova movimentação avulsa" : "Voltar para Movimentações");
+            model.addAttribute("voltarTexto", single ? "Nova movimentação avulsa" : "Voltar para Movimentar Itens");
             model.addAttribute("origem", de == null || de.isBlank() ? null : de.trim());
         } else {
             model.addAttribute("voltarUrl", BOOKS);
-            model.addAttribute("voltarTexto", "Voltar para Livros");
+            model.addAttribute("voltarTexto", "Voltar para Controle de Títulos");
         }
         model.addAttribute("statusLabels", STATUS_LABELS);
         model.addAttribute("titulo", switch (mode) {
@@ -143,9 +143,9 @@ public class CopyController {
             default -> "Reimpressão de etiquetas";
         });
         model.addAttribute("crumb", switch (mode) {
-            case "entrada" -> "ACERVO / EXEMPLARES / NOVA ENTRADA";
-            case "movimentacao" -> "ACERVO / MOVIMENTAÇÕES";
-            default -> "ACERVO / EXEMPLARES / REIMPRESSÃO";
+            case "entrada" -> "ACERVO / CONTROLE DE TÍTULOS / NOVA ENTRADA";
+            case "movimentacao" -> "ACERVO / MOVIMENTAR ITENS";
+            default -> "ACERVO / CONTROLE DE TÍTULOS / REIMPRESSÃO";
         });
 
         if (codigos == null || codigos.isBlank()) {

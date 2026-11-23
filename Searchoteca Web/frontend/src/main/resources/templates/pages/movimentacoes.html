@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <!--
-  ACERVO / MOVIMENTAÇÕES: escolha entre as duas formas de mover exemplares.
+  ACERVO / MOVIMENTAR ITENS: escolha entre as duas formas de mover exemplares.
     Avulsa  -> /acervo/movimentacoes/avulsa  (lê um exemplar e escolhe a nova localização)
     Em lote -> /acervo/movimentacoes/lote    (busca a localização e move por quantidade)
 -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title='Movimentações', active='acervo/movimentacoes',
+      th:replace="~{layout/app :: page(title='Movimentar Itens', active='acervo/movimentacoes',
                                        content=~{::content}, modals=~{})}">
 <body>
 <section th:fragment="content">
-    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAÇÕES', title='Movimentações', actions=~{})}"></div>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAR ITENS', title='Movimentar Itens', actions=~{})}"></div>
 
     <p class="page-lead">Como você quer movimentar os exemplares?</p>
 
@@ -34,8 +34,8 @@
         </a>
     </div>
 
-    <p class="hint">Nas duas formas só se move exemplar disponível na estante. O código do exemplar muda junto
-        com a localização, então a tela final traz os códigos novos e a impressão das etiquetas.</p>
+    <p class="hint">Nas duas formas só se move exemplar disponível na estante. O código do exemplar não muda
+        com a localização: a etiqueta colada no livro continua valendo, sem reimprimir.</p>
 </section>
 </body>
 </html>

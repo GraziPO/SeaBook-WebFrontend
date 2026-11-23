@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <!-- ACERVO / CONSULTA: tela inicial de todos os perfis (sai da barra lateral e entra no submenu do acervo). -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title='Consultar acervo', active='acervo/consulta',
+      th:replace="~{layout/app :: page(title='Livros Disponíveis', active='acervo/consulta',
                                        content=~{::content}, modals=~{::modals})}">
 <body>
 <section th:fragment="content">
-    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / CONSULTA', title='Consultar acervo', actions=~{})}"></div>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / LIVROS DISPONÍVEIS', title='Livros Disponíveis', actions=~{})}"></div>
 
     <form th:action="@{/acervo/consulta}" method="get" class="search-hero" role="search">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>

@@ -9,7 +9,9 @@ import lombok.Setter;
  *  - termos pendentes:   {termsRequired, termsToken, termsVersion, privacyVersion}
  *  - MFA pendente:       {mfaRequired, mfaToken, email, expiresInSeconds}
  *  - troca de senha:     {passwordChallengeRequired, passwordChangeToken, expiresInSeconds}
- *  - login concluído:    {token, username, role_code}
+ *  - login concluído:    {token, username, role_code, mfaTrustToken?, mfaTrustExpiresInSeconds?}
+ *    (mfaTrustToken só vem quando o código do MFA acabou de ser confirmado: vai para o cookie que
+ *     lembra o navegador por 30 min)
  * ignoreUnknown: se o backend passar a mandar um campo novo, o login não quebra.
  */
 @Getter
@@ -32,6 +34,9 @@ public class AuthResult {
     private String token;
     private String username;
     private String role_code;
+
+    private String mfaTrustToken;
+    private Long mfaTrustExpiresInSeconds;
 
     public boolean isTermsChallenge() {
         return token == null && termsToken != null;

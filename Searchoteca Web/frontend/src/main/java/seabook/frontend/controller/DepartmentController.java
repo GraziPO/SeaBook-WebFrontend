@@ -24,6 +24,8 @@ import java.util.Objects;
  * Uma página por departamento, na ordem do código (?d=CODIGO; sem ?d, o primeiro).
  * A página mostra as localizações dele; "Anterior" e "Próximo" passam de um departamento para o outro.
  * Cadastrar e editar departamento usam o mesmo modal; se o backend recusar, o modal reabre com o erro.
+ * Página pública (só leitura) para visitantes e perfis sem permissão: os botões de alterar só aparecem
+ * para quem gerencia o acervo (nav.manageArchive) e o backend recusa qualquer escrita sem permissão.
  */
 @Controller
 public class DepartmentController {
@@ -38,7 +40,8 @@ public class DepartmentController {
 
     @GetMapping(LIST)
     public String list(@RequestParam(name = "d", required = false) String code, Model model) {
-        List<Department> departs = backendService.listDepart().stream()
+        // leitura pela rota pública: a tela abre para qualquer perfil, inclusive sem login (só consulta)
+        List<Department> departs = backendService.publicDepartments().stream()
                 .sorted(Comparator.comparing(Department::getDepartCode, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
         model.addAttribute("departamentos", departs);
@@ -58,7 +61,7 @@ public class DepartmentController {
             }
         }
         Department current = departs.get(index);
-        List<Location> locais = backendService.listLocal().stream()
+        List<Location> locais = backendService.publicLocations().stream()
                 .filter(l -> Objects.equals(l.getDepartCode(), current.getDepartCode()))
                 .sorted(Comparator.comparing(Location::getLocalCode, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();

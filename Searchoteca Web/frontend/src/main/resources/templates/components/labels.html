@@ -3,13 +3,21 @@
 <body>
 
 <!--
-  ETIQUETA DO EXEMPLAR: título, "Exemplar N · DEPARTAMENTO / LOCAL", código de barras e o código em texto.
-  Modelo vertical (tudo empilhado) que se adapta ao tamanho escolhido na tela de etiquetas:
-  as letras e a altura das barras acompanham a etiqueta (container queries, em app.css).
+  ETIQUETA DO EXEMPLAR: título, "Exemplar N · Autor" (+ preço), código de barras e o código em texto.
+  Preço: só com o módulo de vendas ligado (nav.salesEnabled, configuração do root) e se o livro tiver
+  preço. Sai como texto, à direita; o código de barras continua só ISBN + número do exemplar.
+  O código é ISBN + número do exemplar e não muda quando o exemplar troca de lugar; por isso a
+  etiqueta não traz a localização (ficaria desatualizada depois de uma movimentação).
+  Tamanho fixo de 50 × 30 mm (css/app.css e js/labels.js).
 -->
-<div th:fragment="label(e)" class="copy-label">
+<div th:fragment="label(e)" class="copy-label" th:attr="data-label-code=${e.code()}">
     <div class="copy-label-title" th:text="${e.title()}" th:title="${e.title()}">Vidas Secas</div>
-    <div class="copy-label-meta" th:text="|Exemplar ${e.copyIndex()} · ${e.departCode()} / ${e.localCode()}|">Exemplar 2 · CIE / D1</div>
+    <div class="copy-label-meta">
+        <span class="copy-label-meta-text"
+              th:text="${e.author() != null and !#strings.isEmpty(e.author())} ? |Exemplar ${e.copyIndex()} · ${e.author()}| : |Exemplar ${e.copyIndex()}|">Exemplar 2 · Graciliano Ramos</span>
+        <span class="copy-label-price" th:if="${nav != null and nav.salesEnabled() and e.salePrice() != null}"
+              th:text="|R$ ${#numbers.formatDecimal(e.salePrice(), 1, 'POINT', 2, 'COMMA')}|">R$ 39,90</span>
+    </div>
     <div class="copy-label-bars">
         <svg class="barcode" th:attr="data-code=${e.code()}" role="img" th:aria-label="|Código de barras ${e.code()}|"></svg>
     </div>
@@ -17,37 +25,20 @@
 </div>
 
 
-<!-- Escolha do tamanho (fica na tela de etiquetas; não sai na impressão). -->
-<form th:fragment="sizePicker" class="label-size no-print" data-label-size onsubmit="return false">
-    <div>
-        <label for="etq-tamanho">Tamanho da etiqueta</label>
-        <select id="etq-tamanho" name="preset">
-            <option value="40x25">40 × 25 mm</option>
-            <option value="50x30" selected>50 × 30 mm</option>
-            <option value="60x40">60 × 40 mm</option>
-            <option value="50x70">50 × 70 mm (vertical)</option>
-            <option value="100x50">100 × 50 mm</option>
-            <option value="custom">Outro tamanho…</option>
-        </select>
+<!--
+  ETIQUETA DA LOCALIZAÇÃO (para colar na prateleira): nome, departamento, código de barras e o código.
+  O leitor lê o código da localização direto nos campos de busca (ex.: Movimentações).
+  l = localização (localCode, localName, departCode); d = departamento dela (pode ser null).
+-->
+<div th:fragment="locationLabel(l, d)" class="copy-label" th:attr="data-label-code=${l.localCode}">
+    <div class="copy-label-title" th:text="${l.localName}" th:title="${l.localName}">Estante 01 · Prateleira 1</div>
+    <div class="copy-label-meta"
+         th:text="${d != null} ? |${d.departCode} — ${d.departName}| : ${l.departCode}">LITBR — Literatura Brasileira</div>
+    <div class="copy-label-bars">
+        <svg class="barcode" th:attr="data-code=${l.localCode}" role="img" th:aria-label="|Código de barras ${l.localCode}|"></svg>
     </div>
-    <div class="label-size-custom" data-label-custom hidden>
-        <div>
-            <label for="etq-largura">Largura (mm)</label>
-            <input id="etq-largura" type="number" name="width" min="25" max="120" step="1" value="50">
-        </div>
-        <div>
-            <label for="etq-altura">Altura (mm)</label>
-            <input id="etq-altura" type="number" name="height" min="15" max="120" step="1" value="30">
-        </div>
-    </div>
-    <div>
-        <label for="etq-dpi">Resolução da impressora</label>
-        <select id="etq-dpi" name="dpi">
-            <option value="203" selected>203 dpi (mais comum)</option>
-            <option value="300">300 dpi</option>
-        </select>
-    </div>
-</form>
+    <div class="copy-label-code" th:text="${l.localCode}">LITBR-E01P1</div>
+</div>
 
 </body>
 </html>

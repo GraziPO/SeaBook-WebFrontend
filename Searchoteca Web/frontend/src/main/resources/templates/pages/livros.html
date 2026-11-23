@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <!--
-  ACERVO / LIVROS: lista + um modal para cadastrar/editar (com busca por ISBN: ISBNdb e Open Library)
+  ACERVO / CONTROLE DE TÍTULOS: lista + um modal para cadastrar/editar (com busca por ISBN: ISBNdb e Open Library)
   + um modal pequeno para o preço de venda (só root, com vendas ligadas)
   + um modal para cadastrar exemplares do livro (coluna "Exemplares"), que termina na lista de exemplares
-  + reimpressão de etiquetas (botão do topo). A movimentação fica em Acervo > Movimentações.
+  + reimpressão de etiquetas (botão do topo). A movimentação fica em Acervo > Movimentar Itens.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title='Livros', active='acervo/livros',
+      th:replace="~{layout/app :: page(title='Controle de Títulos', active='acervo/livros',
                                        content=~{::content}, modals=~{::modals})}">
 <body>
 
 <section th:fragment="content">
-    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / LIVROS', title='Livros', actions=~{::headActions})}"></div>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / CONTROLE DE TÍTULOS', title='Controle de Títulos', actions=~{::headActions})}"></div>
 
     <th:block th:if="${not #lists.isEmpty(pagina.content())}">
         <table class="data-table">

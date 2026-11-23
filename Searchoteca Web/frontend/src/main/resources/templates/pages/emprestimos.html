@@ -3,6 +3,8 @@
   EMPRÉSTIMOS: lista + dois modais com a lista de leitura:
    - Novo empréstimo: RA do aluno + exemplares (aceita disponível ou reservado para ele)
    - Devolução: só exemplares emprestados; o controller devolve um por um no backend
+  + Novo aluno: cadastro no balcão (permissão students:create do operador de empréstimo), com o mesmo
+    formulário da tela Usuários (components/forms :: studentForm); depois de salvar, volta para cá.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title='Empréstimos', active='emprestimos',
@@ -56,6 +58,7 @@
 </section>
 
 <th:block th:fragment="headActions">
+    <button type="button" class="btn-outline" data-open-modal="modal-aluno">+ Novo aluno</button>
     <button type="button" class="btn-outline" data-open-modal="modal-devolucao">Registrar devolução</button>
     <button type="button" class="btn-solid" data-open-modal="modal-emprestimo">+ Novo empréstimo</button>
 </th:block>
@@ -63,6 +66,7 @@
 <th:block th:fragment="modals">
     <dialog th:replace="~{components/modal :: modal(id='modal-emprestimo', title='Novo empréstimo', body=~{::loanForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-devolucao', title='Registrar devolução', body=~{::returnForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-aluno', title='Novo aluno', body=~{components/forms :: studentForm(returnTo=${currentUri})})}"></dialog>
 </th:block>
 
 <form th:fragment="loanForm" th:action="@{/emprestimos}" method="post" class="data-form">
@@ -70,6 +74,7 @@
     <div class="field-full">
         <label for="emp-ra">RA do aluno</label>
         <input id="emp-ra" type="text" name="ra" required autocomplete="off" placeholder="Leia a carteirinha ou digite o RA">
+        <div class="hint">Aluno ainda sem cadastro? Feche esta janela e use <strong>+ Novo aluno</strong>.</div>
     </div>
     <div th:replace="~{components/scan :: scanList(name='items', label='Exemplares',
                         submit='code', expect='AVAILABLE,RESERVED', price=false)}"></div>

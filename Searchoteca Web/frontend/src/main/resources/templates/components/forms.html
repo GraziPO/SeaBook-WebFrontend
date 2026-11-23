@@ -32,5 +32,39 @@
     </div>
 </form>
 
+<!-- ===================================================================== novo aluno
+     Usado em Usuários (root e administrador de usuários) e em Empréstimos (cadastro no balcão, pelo
+     operador de empréstimo). returnTo: para onde voltar depois de salvar (e, em caso de erro, com o
+     modal "modal-aluno" reaberto, que precisa existir nessa tela). -->
+<form th:fragment="studentForm(returnTo)" method="post" th:action="@{/alunos}" class="data-form">
+    <input type="hidden" name="returnTo" th:value="${returnTo}">
+    <div th:replace="~{components/ui :: modalError}"></div>
+    <div class="field-full">
+        <label for="al-nome">Nome completo</label>
+        <input id="al-nome" type="text" name="completeName" required maxlength="100">
+    </div>
+    <div>
+        <label for="al-ra">RA</label>
+        <input id="al-ra" type="text" name="ra" required maxlength="30" autocomplete="off">
+    </div>
+    <div>
+        <label for="al-telefone">Telefone</label>
+        <input id="al-telefone" type="tel" name="phone" maxlength="20" placeholder="(11) 90000-0000">
+    </div>
+    <div>
+        <label for="al-usuario">Usuário</label>
+        <input id="al-usuario" type="text" name="username" required maxlength="30" autocomplete="off">
+    </div>
+    <div>
+        <label for="al-email">E-mail</label>
+        <input id="al-email" type="email" name="email" required maxlength="100">
+    </div>
+    <p class="field-full modal-hint">A senha inicial é o <strong>RA</strong>. O aluno é obrigado a trocá-la no primeiro acesso.</p>
+    <div class="form-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn-solid">Cadastrar aluno</button>
+    </div>
+</form>
+
 </body>
 </html>

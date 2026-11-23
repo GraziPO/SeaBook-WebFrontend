@@ -423,76 +423,66 @@ main [data-close-modal] { display: none; }
 .t-rule { border-top: 1px dashed #000; margin: 6px 0; }
 .t-item { margin-bottom: 4px; }
 
-/* ---------- etiquetas adaptáveis (impressora térmica de etiquetas) ---------- */
-.label-size {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: flex-end;
-    background: #fff;
-    border: 1px solid #F0DCD3;
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 12px;
-    max-width: 760px;
-}
-.label-size label {
-    display: block; font-size: 12px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.04em; margin-bottom: 6px;
-}
-.label-size select, .label-size input {
-    height: 40px; border-radius: 6px; border: 1px solid #C9D3DB; background: var(--color-input-bg);
-    padding: 0 12px; font-size: 14px;
-}
-.label-size input { width: 96px; }
-.label-size-custom { display: flex; gap: 12px; }
-.label-size-custom[hidden] { display: none; }
-
+/* ---------- etiquetas (impressora térmica): tamanho FIXO de 50 × 30 mm, 203 dpi ----------
+   Para mudar o tamanho, troque nos três lugares marcados com "TAMANHO DA ETIQUETA":
+   aqui (.copy-label), no @page etiqueta logo abaixo e em LABEL_W_MM no js/labels.js. */
 .label-roll {
-    --label-w: 50mm;
-    --label-h: 30mm;
     display: flex;
-    flex-direction: column;      /* fila única vertical */
+    flex-direction: column;
     align-items: flex-start;
     gap: 12px;
     margin-top: 16px;
 }
 
 .copy-label {
-    width: var(--label-w);
-    height: var(--label-h);
+    width: 50mm;                 /* TAMANHO DA ETIQUETA */
+    height: 30mm;                /* TAMANHO DA ETIQUETA */
     box-sizing: border-box;
-    padding: 2mm 2.5mm;
+    padding: 1.8mm 2.5mm 1.5mm;
     background: #fff;
     color: #000;
     border: 1px dashed #C9B3AA;  /* só na tela */
     border-radius: 2mm;
     display: flex;
-    flex-direction: column;      /* modelo vertical: tudo empilhado */
+    flex-direction: column;
     overflow: hidden;
-    container-type: size;        /* as letras acompanham o tamanho da etiqueta */
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .copy-label-title {
     font-weight: 700;
-    font-size: clamp(6pt, min(11cqh, 7.5cqw), 16pt);
+    font-size: 8pt;
     line-height: 1.15;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;       /* título longo: até 2 linhas */
-    -webkit-box-orient: vertical;
+    max-height: 2.3em;           /* título longo: até 2 linhas */
     overflow: hidden;
     flex-shrink: 0;
 }
 
 .copy-label-meta {
-    font-size: clamp(5pt, min(8cqh, 5.5cqw), 11pt);
-    margin: 1cqh 0 2.5cqh;
+    font-size: 6pt;
+    line-height: 1.2;
+    margin: 0.4mm 0 0.8mm;
+    display: flex;               /* "Exemplar N · Autor" à esquerda, preço à direita */
+    align-items: baseline;
+    gap: 1.5mm;
     flex-shrink: 0;
+}
+.copy-label-meta-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;     /* autor longo é cortado; o preço nunca */
+}
+.copy-label-price {
+    font-weight: 700;
+    font-size: 7.5pt;
+    white-space: nowrap;
 }
 
 .copy-label-bars {
     flex: 1;                     /* as barras ocupam o espaço que sobra */
-    min-height: 0;
+    min-height: 6mm;
     display: flex;
     justify-content: center;
 }
@@ -504,26 +494,34 @@ main [data-close-modal] { display: none; }
 }
 
 .copy-label-code {
-    font-family: ui-monospace, Consolas, monospace;
-    font-size: clamp(5pt, min(8cqh, 5.2cqw), 11pt);
+    font-family: "Courier New", Consolas, monospace;
+    font-size: 6.5pt;
+    font-weight: 700;
     text-align: center;
-    letter-spacing: 0.04em;
-    margin-top: 1.5cqh;
+    letter-spacing: 0.02em;
+    margin-top: 0.6mm;
+    white-space: nowrap;
+    overflow: hidden;
     flex-shrink: 0;
 }
 
+/* prévia na tela (modal da etiqueta da localização): a mesma etiqueta, ampliada */
+.label-preview {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+}
+.label-preview .copy-label { zoom: 1.6; }
+.label-preview-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-text-muted); text-align: center;
+}
+
 /* ---------- impressão térmica ---------- */
-@page etiqueta { size: 50mm 30mm; margin: 0; }  /* o js/labels.js troca pelo tamanho escolhido */
+@page etiqueta { size: 50mm 30mm; margin: 0; }  /* TAMANHO DA ETIQUETA */
 @page cupom { margin: 0; }
 
 @media print {
-    /* etiquetas: uma por página, do tamanho da etiqueta (a página inteira usa o formato da etiqueta) */
-    body:has(.label-roll) { page: etiqueta; }
-    .app .content, .app .page-wrapper { padding: 0 !important; margin: 0; min-height: 0; }
-    .label-roll { display: block; margin: 0; }
-    .copy-label { page: etiqueta; break-after: page; border: none; border-radius: 0; margin: 0; }
-    .copy-label:last-child { break-after: auto; }
-
     /* cupom: só o cupom, encostado no topo, na largura do rolo */
     body.print-thermal dialog[open] { page: cupom; padding: 0; }
     /* o modal sai do centro da tela e encosta no topo do papel */
@@ -806,12 +804,24 @@ button.sidebar-item {
 .print-dialog-intro { margin: 0 0 12px; color: var(--color-text-muted); font-size: 14px; }
 .print-dialog-actions { margin-top: 18px; }
 
-/* as etiquetas existem na página só para a impressão */
+/* as etiquetas ficam escondidas na página; na hora de imprimir, o js/labels.js copia as que vão sair
+   para #label-print-area (filha direta do <body>) e só essa área vai para o papel: o topo, o menu
+   e o resto da tela não interferem no tamanho da página */
 .label-roll.print-only { display: none; }
+#label-print-area { display: none; }
 @media print {
-    .label-roll.print-only { display: block; }
-    body:has(.label-roll.print-only) .content > :not(section),
-    body:has(.label-roll.print-only) .content section > :not(.label-roll) { display: none !important; }
+    html:has(body.printing-labels), body.printing-labels {
+        margin: 0 !important; padding: 0 !important; background: #fff !important;
+        width: auto !important; min-width: 0 !important; height: auto !important;
+    }
+    body.printing-labels > :not(#label-print-area) { display: none !important; }
+    body.printing-labels #label-print-area { display: block; page: etiqueta; }
+    #label-print-area .copy-label {
+        height: 29.6mm;          /* um fio abaixo de 30 mm: evita página em branco entre as etiquetas */
+        border: none; border-radius: 0; margin: 0;
+        break-after: page; break-inside: avoid;
+    }
+    #label-print-area .copy-label:last-child { break-after: auto; }
 }
 @media (max-width: 860px) { .entry-summary { grid-template-columns: 1fr 1fr; } }
 
@@ -945,4 +955,43 @@ button.btn-solid:disabled { opacity: .5; cursor: not-allowed; }
     .move-arrow { transform: rotate(90deg); padding: 0; justify-self: center; }
     .copy-card { grid-template-columns: 1fr 1fr; }
     .move-footer { flex-direction: column; align-items: stretch; }
+}
+
+/* ---------- Localização: linha em destaque quando se chega pelo link "onde encontrar" (#local-COD) ---------- */
+.local-row { scroll-margin-top: 96px; }
+.data-table tr.local-row:target td { background: #FFF4DB; }
+.data-table tr.local-row:target td:first-child { box-shadow: inset 4px 0 0 var(--color-accent); }
+
+
+/* ---------- Minha conta: dados do usuário logado e pedido de desativação (aluno) ---------- */
+a.topbar-user { color: inherit; text-decoration: none; border-radius: 6px; padding: 2px 6px; }
+a.topbar-user:hover, a.topbar-user:focus-visible { background: #FBF3EE; }
+a.topbar-user:hover .topbar-name { color: var(--color-accent); }
+
+.account-card {
+    background: #fff; border: 1px solid #F0DCD3; border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 18px; max-width: 1080px;
+}
+.account-card-title { font-family: var(--font-serif); color: var(--color-accent); font-size: 19px; margin: 0 0 14px; }
+.account-data {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px 28px; margin: 0;
+}
+.account-data dt {
+    font-size: 12px; text-transform: uppercase; font-weight: 700; letter-spacing: .03em;
+    color: var(--color-text-muted); margin-bottom: 4px;
+}
+.account-data dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+.account-links { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 18px; font-size: 14px; }
+.account-links a { color: var(--color-accent); }
+.account-danger { border-left: 4px solid #B3261E; }
+.account-danger p { line-height: 1.6; margin: 0 0 12px; }
+.account-list { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; }
+/* a caixa de confirmação fica dentro do .data-form: desfaz o rótulo em maiúsculas e o input de 42px */
+.data-form label.account-confirm {
+    display: flex; gap: 10px; align-items: flex-start; margin: 0; cursor: pointer;
+    font-size: 14px; line-height: 1.5; font-weight: 500; text-transform: none; letter-spacing: normal;
+}
+.data-form .account-confirm input {
+    width: 18px; height: 18px; padding: 0; margin: 2px 0 0; flex-shrink: 0; accent-color: var(--color-accent);
 }

@@ -43,7 +43,12 @@
                 <th:block th:if="${!f.joined()}">
                     <div class="status-big no">Nenhum exemplar disponível</div>
                     <p th:if="${f.canJoin()}" th:text="|Entre na fila de espera: ${f.queueSize()} de ${f.limit()} lugares ocupados.|">Entre na fila de espera.</p>
-                    <p th:unless="${f.canJoin()}">A fila de espera deste título está cheia. Tente de novo mais tarde.</p>
+                    <!-- sem botão: diz o motivo certo (antes, qualquer caso aparecia como "fila cheia") -->
+                    <th:block th:unless="${f.canJoin()}">
+                        <p th:if="${f.circulatingCopies() == 0}">Este título não tem exemplares no acervo no momento.</p>
+                        <p th:if="${f.circulatingCopies() > 0 and f.queueSize() >= f.limit()}">A fila de espera deste título está cheia. Tente de novo mais tarde.</p>
+                        <p th:if="${f.circulatingCopies() > 0 and f.queueSize() < f.limit()}">Você já está com um exemplar deste título.</p>
+                    </th:block>
                     <form th:if="${f.canJoin()}" th:action="@{/fila/{isbn}(isbn=${livro.isbn()})}" method="post">
                         <button type="submit" class="btn-solid">Entrar na fila de espera</button>
                     </form>
@@ -65,7 +70,10 @@
         <tbody>
         <tr th:each="loc : ${livro.locations()}">
             <td th:text="|${loc.departCode()} — ${loc.departName()}|">CIE — Ciências</td>
-            <td th:text="|${loc.localCode()} — ${loc.localName()}|">D1 — Estante 1</td>
+            <!-- leva à tela Localização (pública), já no departamento e com a linha em destaque -->
+            <td><a th:href="@{/acervo/departamentos(d=${loc.departCode()})} + '#local-' + ${loc.localCode()}"
+                   class="row-link" th:text="|${loc.localCode()} — ${loc.localName()}|"
+                   th:title="|Ver ${loc.localName()} em Localização|">D1 — Estante 1</a></td>
             <td class="num" th:text="${loc.available()}">1</td>
             <td class="num" th:text="${loc.total()}">2</td>
         </tr>

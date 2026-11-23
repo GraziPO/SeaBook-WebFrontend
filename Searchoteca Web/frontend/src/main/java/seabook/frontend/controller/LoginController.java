@@ -1,11 +1,15 @@
 package seabook.frontend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,13 +28,19 @@ import seabook.frontend.service.AuthService;
  *   2. /termos           aceite dos Termos e da Política (se a versão atual não foi aceita)
  *   3. /mfa              código enviado por e-mail
  *   4. /primeiro-acesso  troca da senha inicial (se o usuário foi cadastrado por outra pessoa)
- * Também cuida do "esqueci a senha", que não exige login.
+ * Também cuida do "esqueci a senha" e do pedido de reativação de conta desativada, que não exigem login.
+ *
+ * MFA lembrado: depois que o código é confirmado, o backend devolve um mfaTrustToken, guardado no cookie
+ * HttpOnly {@value #MFA_TRUST_COOKIE} por 30 min. Os logins seguintes neste navegador mandam o cookie e,
+ * se ele ainda valer para o mesmo usuário, a etapa 3 é pulada. Sair (logout) não apaga o cookie: é ele que
+ * evita pedir o código de novo ao entrar outra vez dentro dos 30 min.
  */
 @Controller
 public class LoginController {
 
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
     private static final String PASSWORD_HINT = "A senha deve ter ao menos 8 caracteres, com letras e números.";
+    static final String MFA_TRUST_COOKIE = "SEABOOK_MFA";
 
     private final AuthService authService;
 
@@ -62,11 +72,18 @@ public class LoginController {
     @PostMapping("/login")
     public String login(@RequestParam String username,
                         @RequestParam String password,
+                        @CookieValue(name = MFA_TRUST_COOKIE, required = false) String mfaTrust,
                         HttpSession session,
+                        HttpServletRequest request,
+                        HttpServletResponse response,
                         RedirectAttributes redirectAttributes) {
         clearPendingLogin(session);
         try {
-            AuthResult result = authService.login(username, password);
+            AuthResult result = authService.login(username, password, mfaTrust);
+            if (mfaTrust != null && result != null && result.isMfaChallenge()) {
+                // o cookie não vale mais (expirou, é de outro usuário ou a senha foi trocada): descarta
+                forgetMfa(request, response);
+            }
             return nextStep(result, session, redirectAttributes);
         } catch (RestClientException ex) {
             redirectAttributes.addFlashAttribute("erro", BackendMessages.of(ex, "Usuário ou senha inválidos."));
@@ -159,6 +176,8 @@ public class LoginController {
     @PostMapping("/mfa/verify")
     public String verifyMfa(@RequestParam String code,
                             HttpSession session,
+                            HttpServletRequest request,
+                            HttpServletResponse response,
                             RedirectAttributes redirectAttributes) {
         String mfaToken = (String) session.getAttribute("pendingMfaToken");
         if (mfaToken == null) {
@@ -168,6 +187,7 @@ public class LoginController {
             AuthResult result = authService.verifyMfa(mfaToken, code);
             session.removeAttribute("pendingMfaToken");
             session.removeAttribute("pendingEmail");
+            rememberMfa(result, request, response);
             // Antes ia direto para a sessão; agora o backend pode pedir a troca de senha
             return nextStep(result, session, redirectAttributes);
         } catch (RestClientException ex) {
@@ -213,6 +233,8 @@ public class LoginController {
     public String firstAccess(@RequestParam String newPassword,
                               @RequestParam String confirmPassword,
                               HttpSession session,
+                              HttpServletRequest request,
+                              HttpServletResponse response,
                               RedirectAttributes redirectAttributes) {
         String token = (String) session.getAttribute("pendingPasswordChangeToken");
         if (token == null) {
@@ -225,6 +247,7 @@ public class LoginController {
         try {
             AuthResult result = authService.completeFirstAccess(token, newPassword);
             session.removeAttribute("pendingPasswordChangeToken");
+            rememberMfa(result, request, response);   // a senha mudou: o cookie antigo deixou de valer
             return nextStep(result, session, redirectAttributes);
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 401) {
@@ -292,6 +315,32 @@ public class LoginController {
         }
     }
 
+    /* ---------------- pedido de reativação (conta desativada, sem login) ---------------- */
+
+    @GetMapping("/reativacao")
+    public String reactivationForm() {
+        return "auth/reativacao";
+    }
+
+    @PostMapping("/reativacao")
+    public String requestReactivation(@RequestParam String username,
+                                      @RequestParam String password,
+                                      @RequestParam(required = false) String reason,
+                                      RedirectAttributes redirectAttributes) {
+        try {
+            authService.requestReactivation(username, password, reason);
+            // a mesma mensagem para qualquer caso (o backend não diz se a conta existe ou se a senha estava certa)
+            redirectAttributes.addFlashAttribute("info",
+                    "Se os dados estiverem corretos e a conta puder ser reativada, o pedido foi enviado à administração. "
+                            + "Tente entrar de novo depois que ele for analisado.");
+            return "redirect:/login";
+        } catch (RestClientException ex) {
+            redirectAttributes.addFlashAttribute("erro", BackendMessages.of(ex, "Não foi possível enviar o pedido agora."));
+            redirectAttributes.addFlashAttribute("username", username);
+            return "redirect:/reativacao";
+        }
+    }
+
     /* ---------------- sair ---------------- */
 
     @GetMapping("/logout")
@@ -350,6 +399,34 @@ public class LoginController {
         session.removeAttribute("pendingMfaToken");
         session.removeAttribute("pendingEmail");
         session.removeAttribute("pendingPasswordChangeToken");
+    }
+
+    /** Guarda no navegador o token que dispensa o MFA nos próximos 30 min (só se o backend mandou um). */
+    private void rememberMfa(AuthResult result, HttpServletRequest request, HttpServletResponse response) {
+        if (result == null || result.getMfaTrustToken() == null) {
+            return;
+        }
+        long maxAge = result.getMfaTrustExpiresInSeconds() != null ? result.getMfaTrustExpiresInSeconds() : 1800;
+        writeMfaCookie(result.getMfaTrustToken(), maxAge, request, response);
+    }
+
+    private void forgetMfa(HttpServletRequest request, HttpServletResponse response) {
+        writeMfaCookie("", 0, request, response);
+    }
+
+    /**
+     * HttpOnly: o JavaScript da página não lê o token. Secure: só viaja por https (no Railway, atrás do proxy,
+     * request.isSecure() é true por causa do forward-headers-strategy). SameSite=Lax: não vai em POST de outros sites.
+     */
+    private void writeMfaCookie(String value, long maxAgeSeconds, HttpServletRequest request, HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from(MFA_TRUST_COOKIE, value)
+                .httpOnly(true)
+                .secure(request.isSecure())
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     private void startSession(HttpSession session, AuthResult result) {

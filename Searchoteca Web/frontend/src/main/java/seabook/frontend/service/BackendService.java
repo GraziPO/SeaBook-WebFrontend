@@ -25,7 +25,9 @@ import seabook.frontend.dto.settings.SettingDetail;
 import seabook.frontend.dto.settings.SettingsUpdateRequest;
 import seabook.frontend.dto.settings.SettingsView;
 import seabook.frontend.dto.users.AccountRequestView;
+import seabook.frontend.dto.users.DeactivationRequest;
 import seabook.frontend.dto.users.DecisionRequest;
+import seabook.frontend.dto.users.MyAccount;
 import seabook.frontend.dto.users.StudentRequest;
 import seabook.frontend.dto.users.UserRow;
 import seabook.frontend.model.Book;
@@ -172,6 +174,46 @@ public class BackendService {
                 .uri("/api/exemplares/codigo/{codigo}", code.trim())
                 .retrieve()
                 .body(CopyLookup.class);
+    }
+
+    // ---------------- LOCALIZAÇÃO (consulta pública, só leitura) ----------------
+    // Rotas /api/public/localizacao: funcionam com ou sem login. A tela Localização usa estas para
+    // qualquer perfil; cadastrar, editar e excluir continuam nas rotas protegidas abaixo.
+
+    public List<Department> publicDepartments() {
+        return restClient.get()
+                .uri("/api/public/localizacao/departamentos")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<Department>>() {});
+    }
+
+    public Department publicDepart(String departCode) {
+        return restClient.get()
+                .uri("/api/public/localizacao/departamentos/{departCode}", departCode)
+                .retrieve()
+                .body(Department.class);
+    }
+
+    public List<Location> publicLocations() {
+        return restClient.get()
+                .uri("/api/public/localizacao")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<Location>>() {});
+    }
+
+    public Location publicLocal(String localCode) {
+        return restClient.get()
+                .uri("/api/public/localizacao/{localCode}", localCode)
+                .retrieve()
+                .body(Location.class);
+    }
+
+    /** Livros da localização com total, disponíveis, emprestados e reservados (só exemplares do acervo). */
+    public List<LocationBookStock> publicLocalBooks(String localCode) {
+        return restClient.get()
+                .uri("/api/public/localizacao/{localCode}/livros", localCode)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<LocationBookStock>>() {});
     }
 
     // ---------------- DEPARTAMENTOS ----------------
@@ -390,6 +432,40 @@ public class BackendService {
         restClient.post()
                 .uri("/api/usuarios/pedidos/{id}/recusar", id)
                 .body(new DecisionRequest(blankToNull(note)))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    // ---------------- MINHA CONTA (qualquer usuário logado) ----------------
+
+    /** Os dados que o sistema guarda sobre quem está logado. */
+    public MyAccount myAccount() {
+        return restClient.get()
+                .uri("/api/usuarios/me")
+                .retrieve()
+                .body(MyAccount.class);
+    }
+
+    /** Pedidos de desativação/reativação do próprio aluno (só o perfil aluno tem account:request). */
+    public List<AccountRequestView> myAccountRequests() {
+        List<AccountRequestView> list = restClient.get()
+                .uri("/api/usuarios/me/pedidos")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<AccountRequestView>>() {});
+        return list == null ? List.of() : list;
+    }
+
+    public void requestDeactivation(String reason) {
+        restClient.post()
+                .uri("/api/usuarios/me/desativacao")
+                .body(new DeactivationRequest(blankToNull(reason)))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void cancelDeactivation() {
+        restClient.delete()
+                .uri("/api/usuarios/me/desativacao")
                 .retrieve()
                 .toBodilessEntity();
     }
