@@ -3,15 +3,15 @@
   MOVIMENTAÇÃO AVULSA: o operador lê a etiqueta de UM exemplar (o leitor "digita" e tecla Enter),
   confere o livro e onde ele está, escolhe a nova localização e confirma.
   A consulta do exemplar é a mesma da lista de leitura (GET /exemplares/consulta?codigo=X), feita pelo js/move.js.
-  Depois de mover, vai para a lista com o código novo e a impressão da etiqueta.
+  Depois de mover, vai para a lista do que foi movimentado (o código e a etiqueta continuam os mesmos).
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/app :: page(title='Movimentação avulsa', active='acervo/movimentacoes',
                                        content=~{::content}, modals=~{})}">
 <body>
 <section th:fragment="content">
-    <a th:href="@{/acervo/movimentacoes}" class="back-inline">← Voltar para Movimentações</a>
-    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAÇÕES / AVULSA', title='Movimentação avulsa', actions=~{})}"></div>
+    <a th:href="@{/acervo/movimentacoes}" class="back-inline">← Voltar para Movimentar Itens</a>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / MOVIMENTAR ITENS / AVULSA', title='Movimentação avulsa', actions=~{})}"></div>
 
     <form th:action="@{/acervo/movimentacoes/avulsa}" method="post" class="single-move" data-single-move
           th:data-lookup="@{/exemplares/consulta}">

@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <!--
-  ACERVO / DEPARTAMENTOS (tela única de departamentos e localizações): uma página por departamento,
+  ACERVO / LOCALIZAÇÃO (tela única de departamentos e localizações): uma página por departamento,
   na ordem do código (?d=CODIGO). A tabela mostra as localizações dele; a última linha adiciona uma nova.
   "Detalhes" abre um modal com os livros da localização e os exemplares disponíveis (data-modal-src).
+  "Etiqueta" mostra a etiqueta da localização (código de barras do código) e imprime só ela;
+  "Imprimir etiquetas das localizações" imprime as de todas as localizações do departamento (50 × 30 mm).
   Embaixo, só "Anterior" e "Próximo".
 -->
 <html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/app :: page(title='Departamentos', active='acervo/departamentos',
+      th:replace="~{layout/app :: page(title='Localização', active='acervo/departamentos',
                                        content=~{::content}, modals=~{::modals})}">
 <body>
 
 <section th:fragment="content">
-    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / DEPARTAMENTOS', title='Departamentos', actions=~{::headActions})}"></div>
+    <div th:replace="~{components/ui :: pageHead(crumb='ACERVO / LOCALIZAÇÃO', title='Localização', actions=~{::headActions})}"></div>
 
     <th:block th:if="${departamento != null}">
         <!-- departamento da página -->
@@ -46,15 +48,20 @@
             <tr><th>Código</th><th>Nome</th><th>Descrição</th><th>Ações</th></tr>
             </thead>
             <tbody>
-            <tr th:each="l : ${locais}">
+            <!-- id = âncora do link "onde encontrar" do detalhe do livro (…?d=DEP#local-COD): a linha fica em destaque -->
+            <tr th:each="l : ${locais}" th:id="|local-${l.localCode}|" class="local-row">
                 <td class="mono" th:text="${l.localCode}">LIT-E1</td>
                 <td th:text="${l.localName}">Literatura brasileira</td>
-                <td th:text="${l.localDesc}">Sala 2</td>
+                <td th:text="${#strings.isEmpty(l.localDesc)} ? '—' : ${l.localDesc}"
+                    th:classappend="${#strings.isEmpty(l.localDesc)} ? 'muted'">Sala 2</td>
                 <td class="actions-cell">
                     <button type="button" class="btn-details" data-open-modal="modal-local"
                             th:data-title="${l.localName}"
                             th:data-modal-src="@{/acervo/localizacoes/{c}/detalhes(c=${l.localCode})}">Detalhes</button>
                     <th:block th:if="${nav.manageArchive()}">
+                        <button type="button" class="btn-details" data-open-modal="modal-etiqueta-local"
+                                th:data-label-preview="${l.localCode}"
+                                th:aria-label="|Etiqueta da localização ${l.localCode}|">Etiqueta</button>
                         <button type="button" class="btn-edit" data-open-modal="modal-localizacao"
                                 th:data-form-action="@{/acervo/localizacoes/{c}/editar(c=${l.localCode})}"
                                 data-readonly="localCode"
@@ -81,6 +88,16 @@
             </tbody>
         </table>
 
+        <div class="alert alert-error" data-label-warn hidden th:if="${nav.manageArchive()}"></div>
+
+        <!-- etiquetas das localizações: só para a impressão (e para a prévia do modal), não aparecem na tela -->
+        <div class="label-roll print-only" aria-hidden="true"
+             th:if="${nav.manageArchive() and not #lists.isEmpty(locais)}">
+            <th:block th:each="l : ${locais}">
+                <div th:replace="~{components/labels :: locationLabel(${l}, ${departamento})}"></div>
+            </th:block>
+        </div>
+
         <!-- só "Anterior" e "Próximo" -->
         <nav class="depart-pager" aria-label="Departamentos">
             <a th:href="@{/acervo/departamentos(d=${anterior})}" class="pager-btn"
@@ -106,6 +123,7 @@
     <dialog th:replace="~{components/modal :: modal(id='modal-departamento', title='Cadastrar departamento', body=~{::departmentForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-localizacao-nova', title='Adicionar localização', body=~{::newLocationForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-localizacao', title='Editar localização', body=~{::locationForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-etiqueta-local', title='Etiqueta da localização', body=~{::locationLabelPreview})}"></dialog>
 
     <!-- detalhes da localização: o corpo vem do servidor (livro, ISBN e exemplares disponíveis) -->
     <dialog id="modal-local" class="modal" aria-labelledby="modal-local-titulo">
@@ -116,6 +134,19 @@
         <div class="modal-body" data-modal-content>Carregando…</div>
     </dialog>
 </th:block>
+
+<!-- etiqueta da localização: a prévia é a própria etiqueta (js/labels.js copia para cá) -->
+<div th:fragment="locationLabelPreview">
+    <p class="print-dialog-intro">Cole na prateleira. O leitor de código de barras lê o código da localização
+        direto nos campos de busca (por exemplo, em Movimentar Itens).</p>
+    <div class="label-preview-title">Prévia · 50 × 30 mm</div>
+    <div class="label-preview" data-label-preview-slot></div>
+    <p class="hint">Na janela de impressão, escolha a impressora de etiquetas, margens "Nenhuma" e escala 100%.</p>
+    <div class="form-actions print-dialog-actions">
+        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
+        <button type="button" class="btn-solid" data-print="labels" data-label-print>Imprimir etiqueta</button>
+    </div>
+</div>
 
 <!-- departamento: cadastrar e editar (o modal troca título, action e botão) -->
 <form th:fragment="departmentForm" method="post" th:action="@{/acervo/departamentos}" class="data-form">
@@ -130,8 +161,8 @@
         <input id="dep-nome" type="text" name="departName" required maxlength="100" placeholder="ex.: Artes">
     </div>
     <div class="field-full">
-        <label for="dep-descricao">Descrição</label>
-        <textarea id="dep-descricao" name="departDesc" rows="3" required maxlength="100" placeholder="ex.: Bloco C, 1º andar"></textarea>
+        <label for="dep-descricao">Descrição <span class="muted">(opcional)</span></label>
+        <textarea id="dep-descricao" name="departDesc" rows="3" maxlength="100" placeholder="ex.: Bloco C, 1º andar"></textarea>
     </div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
@@ -157,8 +188,8 @@
         <div class="readonly-value" data-modal-message>D2 — Literatura</div>
     </div>
     <div class="field-full">
-        <label for="locn-descricao">Descrição</label>
-        <textarea id="locn-descricao" name="localDesc" rows="3" required maxlength="100" placeholder="ex.: Sala 2, perto da janela"></textarea>
+        <label for="locn-descricao">Descrição <span class="muted">(opcional)</span></label>
+        <textarea id="locn-descricao" name="localDesc" rows="3" maxlength="100" placeholder="ex.: Sala 2, perto da janela"></textarea>
     </div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
@@ -186,8 +217,8 @@
         </select>
     </div>
     <div class="field-full">
-        <label for="loc-descricao">Descrição</label>
-        <textarea id="loc-descricao" name="localDesc" rows="3" required maxlength="100"></textarea>
+        <label for="loc-descricao">Descrição <span class="muted">(opcional)</span></label>
+        <textarea id="loc-descricao" name="localDesc" rows="3" maxlength="100"></textarea>
     </div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>

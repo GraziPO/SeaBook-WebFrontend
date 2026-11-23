@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  PEDIDO DE REATIVAÇÃO (sem login): para o aluno cuja conta foi desativada (por inatividade ou pela
+  administração). A conta não consegue entrar, então ele se identifica com usuário e senha.
+  O backend (POST /api/auth/reativacao) responde sempre igual, para não revelar se a conta existe;
+  o pedido aparece para o root / administrador de usuários em Usuários > Pedidos de conta.
+  Conta anonimizada (desativação pedida pelo próprio aluno) não pode ser reativada.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pedir reativação - SeaBook</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.svg}">
+    <link rel="icon" type="image/png" sizes="32x32" th:href="@{/images/favicon-32.png}">
+    <link rel="apple-touch-icon" th:href="@{/images/apple-touch-icon.png}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <span class="logo"><img th:src="@{/images/seabook-logo.svg}" alt="SeaBook" width="244" height="56"></span>
+        <div class="auth-subtitle">
+            Sua conta de aluno foi desativada? Peça a reativação. A administração analisa o pedido
+            e, se aprovar, você volta a entrar com a mesma senha.
+        </div>
+
+        <div class="auth-error" th:if="${erro}" th:text="${erro}"></div>
+
+        <form th:action="@{/reativacao}" method="post">
+            <div>
+                <label for="reat-usuario">USUÁRIO</label>
+                <input id="reat-usuario" type="text" name="username" required autofocus autocomplete="username"
+                       th:value="${username}">
+            </div>
+            <div>
+                <label for="reat-senha">SENHA</label>
+                <input id="reat-senha" type="password" name="password" required autocomplete="current-password">
+            </div>
+            <div>
+                <label for="reat-motivo">MOTIVO (OPCIONAL)</label>
+                <!-- estilo no próprio campo: o style.css só formata <input> no cartão de login -->
+                <textarea id="reat-motivo" name="reason" rows="3" maxlength="255"
+                          style="width:100%;border-radius:6px;border:1px solid #C9D3DB;background:var(--color-input-bg);padding:10px 14px;font-size:14px;font-family:inherit;resize:vertical"
+                          placeholder="ex.: voltei a estudar, fiquei afastado no semestre"></textarea>
+            </div>
+            <button type="submit" class="btn-solid">Enviar pedido</button>
+        </form>
+
+        <div class="auth-footer-link muted">
+            Não lembra a senha? Fale com a administração da biblioteca: o pedido precisa dela para confirmar que é você.
+        </div>
+        <div class="auth-footer-link">
+            <a th:href="@{/login}">Voltar ao login</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

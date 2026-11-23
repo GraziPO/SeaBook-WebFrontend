@@ -19,7 +19,8 @@
  * reabre depois de um erro, já com o que a pessoa tinha digitado e a mensagem do backend.
  * data-close-modal fecha o modal; data-print imprime só o modal aberto.
  * data-print="thermal" imprime no formato da impressora térmica (rolo de 80 mm: comprovante de venda).
- * data-print="labels" fecha o modal e imprime só as etiquetas (lista de exemplares).
+ * data-print="labels" fecha o modal e imprime só as etiquetas, 50 × 30 mm (js/labels.js);
+ *   com data-label-code="X", só a etiqueta X (ex.: a de uma localização).
  * data-copy="texto" copia o texto (o botão mostra "Copiado" por um instante).
  */
 (function () {
@@ -156,11 +157,15 @@
             return;
         }
         var printer = event.target.closest('[data-print]');
-        // etiquetas: fecha o modal de tamanho antes, para sair só a fila de etiquetas
+        // etiquetas: fecha o modal (se houver) e imprime só as etiquetas, numa área isolada (js/labels.js)
         if (printer && printer.dataset.print === 'labels') {
             var labelDialog = printer.closest('dialog');
             if (labelDialog) labelDialog.close();
-            setTimeout(function () { window.print(); }, 50);
+            var only = printer.dataset.labelCode || null;
+            setTimeout(function () {
+                if (window.SeaBookLabels) window.SeaBookLabels.print(only);
+                else window.print();
+            }, 50);
             return;
         }
         if (printer) {

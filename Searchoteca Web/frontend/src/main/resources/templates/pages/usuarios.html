@@ -163,7 +163,7 @@
 
 <th:block th:fragment="modals">
     <dialog th:replace="~{components/modal :: modal(id='modal-operador', title='Novo operador', body=~{::operatorForm})}"></dialog>
-    <dialog th:replace="~{components/modal :: modal(id='modal-aluno', title='Novo aluno', body=~{::studentForm})}"></dialog>
+    <dialog th:replace="~{components/modal :: modal(id='modal-aluno', title='Novo aluno', body=~{components/forms :: studentForm(returnTo='/usuarios?aba=alunos')})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-aluno-editar', title='Editar aluno', body=~{::studentEditForm})}"></dialog>
     <dialog th:replace="~{components/modal :: modal(id='modal-decisao', title='Decidir pedido', body=~{::decisionForm})}"></dialog>
 </th:block>
@@ -193,7 +193,8 @@
     <div class="field-full">
         <label for="op-email">E-mail</label>
         <input id="op-email" type="email" name="email" required maxlength="100">
-        <div class="hint">O código de acesso (MFA) e a recuperação de senha chegam neste e-mail.</div>
+        <div class="hint">O código de acesso (MFA) e a recuperação de senha chegam neste e-mail.
+            Na edição ele aparece mascarado: deixe como está para manter, ou apague e digite o novo.</div>
     </div>
     <p class="field-full modal-hint">A senha inicial é o próprio <strong>usuário</strong>. A pessoa é obrigada a trocá-la no primeiro acesso.</p>
     <div class="form-actions">
@@ -202,35 +203,7 @@
     </div>
 </form>
 
-<form th:fragment="studentForm" method="post" th:action="@{/alunos}" class="data-form">
-    <input type="hidden" name="returnTo" th:value="@{/usuarios(aba='alunos')}">
-    <div th:replace="~{components/ui :: modalError}"></div>
-    <div class="field-full">
-        <label for="al-nome">Nome completo</label>
-        <input id="al-nome" type="text" name="completeName" required maxlength="100">
-    </div>
-    <div>
-        <label for="al-ra">RA</label>
-        <input id="al-ra" type="text" name="ra" required maxlength="30" autocomplete="off">
-    </div>
-    <div>
-        <label for="al-telefone">Telefone</label>
-        <input id="al-telefone" type="tel" name="phone" maxlength="20" placeholder="(11) 90000-0000">
-    </div>
-    <div>
-        <label for="al-usuario">Usuário</label>
-        <input id="al-usuario" type="text" name="username" required maxlength="30" autocomplete="off">
-    </div>
-    <div>
-        <label for="al-email">E-mail</label>
-        <input id="al-email" type="email" name="email" required maxlength="100">
-    </div>
-    <p class="field-full modal-hint">A senha inicial é o <strong>RA</strong>. O aluno é obrigado a trocá-la no primeiro acesso.</p>
-    <div class="form-actions">
-        <button type="button" class="btn-outline" data-close-modal>Cancelar</button>
-        <button type="submit" class="btn-solid">Cadastrar aluno</button>
-    </div>
-</form>
+<!-- o formulário de novo aluno fica em components/forms (studentForm): também é usado na tela de Empréstimos -->
 
 <form th:fragment="studentEditForm" method="post" action="#" class="data-form">
     <input type="hidden" name="returnTo" th:value="${currentUri}">
@@ -246,6 +219,7 @@
     <div class="field-full">
         <label for="ale-email">E-mail</label>
         <input id="ale-email" type="email" name="email" required maxlength="100">
+        <div class="hint">Aparece mascarado: deixe como está para manter, ou apague e digite o novo e-mail.</div>
     </div>
     <div class="form-actions">
         <button type="button" class="btn-outline" data-close-modal>Cancelar</button>

@@ -3,7 +3,7 @@
   MOVIMENTAÇÃO EM LOTE (2/2): "Movimentar conteúdo" de uma localização.
   Para cada livro com exemplar na estante, a pessoa informa QUANTOS vão (0 até o que está na estante).
   O backend escolhe QUAIS (do maior número para o menor) e a tela seguinte mostra
-  "Dom Casmurro — cópias 4 e 3 movimentadas", com os códigos novos e a impressão das etiquetas.
+  "Dom Casmurro — cópias 4 e 3 movimentadas". Os códigos e as etiquetas continuam os mesmos.
   js/move.js: atalho "todos", aviso de linha acima do limite, total e botão desligado enquanto houver erro.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
@@ -12,7 +12,7 @@
 <body>
 <section th:fragment="content">
     <a th:href="@{/acervo/movimentacoes/lote}" class="back-inline">← Voltar para a busca</a>
-    <div th:replace="~{components/ui :: pageHead(crumb=|ACERVO / MOVIMENTAÇÕES / ${origem.localCode}|, title='Movimentar conteúdo', actions=~{})}"></div>
+    <div th:replace="~{components/ui :: pageHead(crumb=|ACERVO / MOVIMENTAR ITENS / ${origem.localCode}|, title='Movimentar conteúdo', actions=~{})}"></div>
 
     <form th:action="@{/acervo/movimentacoes/lote/{c}(c=${origem.localCode})}" method="post" data-batch-move>
         <div class="move-head">
@@ -75,8 +75,8 @@
                 </div>
             </div>
             <p class="hint">O sistema escolhe quais cópias vão (a de número mais alto primeiro) e mostra na próxima tela,
-                por exemplo: Dom Casmurro — cópias 4 e 3 movimentadas. O código de cada exemplar muda junto com a
-                localização; a próxima tela também traz os códigos novos e a impressão das etiquetas.</p>
+                por exemplo: Dom Casmurro — cópias 4 e 3 movimentadas. O código de cada exemplar não muda com a
+                localização, então as etiquetas continuam valendo.</p>
         </th:block>
 
         <th:block th:if="${#lists.isEmpty(livros)}">

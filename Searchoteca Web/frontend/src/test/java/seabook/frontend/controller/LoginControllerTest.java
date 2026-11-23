@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
@@ -23,6 +24,8 @@ class LoginControllerTest {
     private LoginController controller;
     private MockHttpSession session;
     private RedirectAttributesModelMap flash;
+    private MockHttpServletRequest request;
+    private MockHttpServletResponse response;
 
     @BeforeEach
     void setUp() {
@@ -30,6 +33,8 @@ class LoginControllerTest {
         controller = new LoginController(auth);
         session = new MockHttpSession();
         flash = new RedirectAttributesModelMap();
+        request = new MockHttpServletRequest();
+        response = new MockHttpServletResponse();
     }
 
     private static AuthResult full(String role) {
@@ -62,8 +67,8 @@ class LoginControllerTest {
     @Test
     @DisplayName("senha certa, MFA desligado: abre a sessão")
     void loginFull() {
-        when(auth.login("maria", "Senha123")).thenReturn(full("students"));
-        assertEquals("redirect:/acervo/consulta", controller.login("maria", "Senha123", session, flash));
+        when(auth.login("maria", "Senha123", null)).thenReturn(full("students"));
+        assertEquals("redirect:/acervo/consulta", controller.login("maria", "Senha123", null, session, request, response, flash));
         assertEquals("jwt", session.getAttribute("jwt"));
         assertEquals("students", session.getAttribute("role"));
     }
@@ -73,46 +78,46 @@ class LoginControllerTest {
     void challenges() {
         AuthResult terms = new AuthResult();
         terms.setTermsToken("t");
-        when(auth.login("a", "x")).thenReturn(terms);
-        assertEquals("redirect:/termos", controller.login("a", "x", session, flash));
+        when(auth.login("a", "x", null)).thenReturn(terms);
+        assertEquals("redirect:/termos", controller.login("a", "x", null, session, request, response, flash));
         assertEquals("t", session.getAttribute("pendingTermsToken"));
 
         AuthResult mfa = new AuthResult();
         mfa.setMfaToken("m");
         mfa.setEmail("m***a@x.com");
-        when(auth.login("b", "x")).thenReturn(mfa);
-        assertEquals("redirect:/mfa", controller.login("b", "x", session, flash));
+        when(auth.login("b", "x", null)).thenReturn(mfa);
+        assertEquals("redirect:/mfa", controller.login("b", "x", null, session, request, response, flash));
         assertNull(session.getAttribute("pendingTermsToken"));   // login novo limpa a etapa anterior
         assertEquals("m***a@x.com", session.getAttribute("pendingEmail"));
 
         AuthResult change = new AuthResult();
         change.setPasswordChangeToken("p");
-        when(auth.login("c", "x")).thenReturn(change);
-        assertEquals("redirect:/primeiro-acesso", controller.login("c", "x", session, flash));
+        when(auth.login("c", "x", null)).thenReturn(change);
+        assertEquals("redirect:/primeiro-acesso", controller.login("c", "x", null, session, request, response, flash));
         assertEquals("p", session.getAttribute("pendingPasswordChangeToken"));
     }
 
     @Test
     @DisplayName("resposta vazia ou estranha do servidor: volta ao login com aviso")
     void unexpected() {
-        when(auth.login("a", "x")).thenReturn(null);
-        assertEquals("redirect:/login", controller.login("a", "x", session, flash));
+        when(auth.login("a", "x", null)).thenReturn(null);
+        assertEquals("redirect:/login", controller.login("a", "x", null, session, request, response, flash));
         assertEquals("O servidor não respondeu ao login. Tente novamente.", flash("erro"));
 
-        when(auth.login("b", "x")).thenReturn(new AuthResult());
-        assertEquals("redirect:/login", controller.login("b", "x", session, flash));
+        when(auth.login("b", "x", null)).thenReturn(new AuthResult());
+        assertEquals("redirect:/login", controller.login("b", "x", null, session, request, response, flash));
         assertEquals("Não foi possível entrar. Tente novamente.", flash("erro"));
     }
 
     @Test
     @DisplayName("senha errada ou conta bloqueada: mensagem do backend; sem mensagem, texto padrão")
     void loginErrors() {
-        when(auth.login("maria", "x")).thenThrow(BackendErrors.status(429, "Conta bloqueada por 15 minutos"));
-        assertEquals("redirect:/login", controller.login("maria", "x", session, flash));
+        when(auth.login("maria", "x", null)).thenThrow(BackendErrors.status(429, "Conta bloqueada por 15 minutos"));
+        assertEquals("redirect:/login", controller.login("maria", "x", null, session, request, response, flash));
         assertEquals("Conta bloqueada por 15 minutos", flash("erro"));
 
-        when(auth.login("joao", "x")).thenThrow(BackendErrors.status(401));
-        controller.login("joao", "x", session, flash);
+        when(auth.login("joao", "x", null)).thenThrow(BackendErrors.status(401));
+        controller.login("joao", "x", null, session, request, response, flash);
         assertEquals("Usuário ou senha inválidos.", flash("erro"));
     }
 
@@ -190,7 +195,7 @@ class LoginControllerTest {
     void mfa() {
         ExtendedModelMap model = new ExtendedModelMap();
         assertEquals("redirect:/login", controller.mfaForm(session, model));
-        assertEquals("redirect:/login", controller.verifyMfa("1", session, flash));
+        assertEquals("redirect:/login", controller.verifyMfa("1", session, request, response, flash));
         assertEquals("redirect:/login", controller.resendMfa(session, flash));
 
         session.setAttribute("pendingMfaToken", "m");
@@ -199,7 +204,7 @@ class LoginControllerTest {
         assertEquals("m***a@x.com", model.get("email"));
 
         when(auth.verifyMfa("m", "000000")).thenThrow(BackendErrors.status(401, "Código inválido. Restam 4 tentativas."));
-        assertEquals("redirect:/mfa", controller.verifyMfa("000000", session, flash));
+        assertEquals("redirect:/mfa", controller.verifyMfa("000000", session, request, response, flash));
         assertEquals("Código inválido. Restam 4 tentativas.", flash("erro"));
 
         AuthResult resent = new AuthResult();
@@ -211,7 +216,7 @@ class LoginControllerTest {
         assertEquals("Um novo código foi enviado.", flash("info"));
 
         when(auth.verifyMfa("m2", "123456")).thenReturn(full("root"));
-        assertEquals("redirect:/acervo/consulta", controller.verifyMfa("123456", session, flash));
+        assertEquals("redirect:/acervo/consulta", controller.verifyMfa("123456", session, request, response, flash));
         assertNull(session.getAttribute("pendingMfaToken"));
         assertEquals("root", session.getAttribute("role"));
     }
@@ -236,24 +241,24 @@ class LoginControllerTest {
     void firstAccess() {
         ExtendedModelMap model = new ExtendedModelMap();
         assertEquals("redirect:/login", controller.firstAccessForm(session, model));
-        assertEquals("redirect:/login", controller.firstAccess("a", "a", session, flash));
+        assertEquals("redirect:/login", controller.firstAccess("a", "a", session, request, response, flash));
 
         session.setAttribute("pendingPasswordChangeToken", "p");
         assertEquals("auth/primeiro_acesso", controller.firstAccessForm(session, model));
         assertNotNull(model.get("dica"));
 
-        assertEquals("redirect:/primeiro-acesso", controller.firstAccess("Senha123", "Senha124", session, flash));
+        assertEquals("redirect:/primeiro-acesso", controller.firstAccess("Senha123", "Senha124", session, request, response, flash));
         assertEquals("As duas senhas não são iguais.", flash("erro"));
 
         when(auth.completeFirstAccess("p", "fraca")).thenThrow(BackendErrors.status(409, "A senha deve ter ao menos 8 caracteres."));
-        assertEquals("redirect:/primeiro-acesso", controller.firstAccess("fraca", "fraca", session, flash));
+        assertEquals("redirect:/primeiro-acesso", controller.firstAccess("fraca", "fraca", session, request, response, flash));
         assertEquals("A senha deve ter ao menos 8 caracteres.", flash("erro"));
 
         when(auth.completeFirstAccess("p", "Offline12")).thenThrow(BackendErrors.offline());
-        assertEquals("redirect:/primeiro-acesso", controller.firstAccess("Offline12", "Offline12", session, flash));
+        assertEquals("redirect:/primeiro-acesso", controller.firstAccess("Offline12", "Offline12", session, request, response, flash));
 
         when(auth.completeFirstAccess("p", "NovaSenha1")).thenReturn(full("students"));
-        assertEquals("redirect:/acervo/consulta", controller.firstAccess("NovaSenha1", "NovaSenha1", session, flash));
+        assertEquals("redirect:/acervo/consulta", controller.firstAccess("NovaSenha1", "NovaSenha1", session, request, response, flash));
         assertNull(session.getAttribute("pendingPasswordChangeToken"));
     }
 
@@ -262,7 +267,7 @@ class LoginControllerTest {
     void firstAccessExpired() {
         session.setAttribute("pendingPasswordChangeToken", "p");
         when(auth.completeFirstAccess("p", "NovaSenha1")).thenThrow(BackendErrors.status(401));
-        assertEquals("redirect:/login", controller.firstAccess("NovaSenha1", "NovaSenha1", session, flash));
+        assertEquals("redirect:/login", controller.firstAccess("NovaSenha1", "NovaSenha1", session, request, response, flash));
         assertNull(session.getAttribute("pendingPasswordChangeToken"));
     }
 
@@ -304,5 +309,114 @@ class LoginControllerTest {
         assertEquals("redirect:/login", controller.logout(request));
         assertTrue(session.isInvalid());
         assertEquals("redirect:/login", controller.logout(new MockHttpServletRequest()));
+    }
+
+    // ------------------------------------------------------------------ MFA lembrado (cookie de 30 min)
+
+    private static AuthResult fullWithTrust(String role) {
+        AuthResult r = full(role);
+        r.setMfaTrustToken("confianca");
+        r.setMfaTrustExpiresInSeconds(1800L);
+        return r;
+    }
+
+    private static AuthResult mfaChallenge() {
+        AuthResult r = new AuthResult();
+        r.setMfaToken("m");
+        r.setEmail("m***a@x.com");
+        return r;
+    }
+
+    @Test
+    @DisplayName("código confirmado: grava o cookie HttpOnly que lembra o navegador por 30 min")
+    void verifyStoresTrustCookie() {
+        session.setAttribute("pendingMfaToken", "m");
+        when(auth.verifyMfa("m", "123456")).thenReturn(fullWithTrust("students"));
+
+        assertEquals("redirect:/acervo/consulta", controller.verifyMfa("123456", session, request, response, flash));
+
+        String cookie = response.getHeader("Set-Cookie");
+        assertNotNull(cookie);
+        assertTrue(cookie.startsWith(LoginController.MFA_TRUST_COOKIE + "=confianca"));
+        assertTrue(cookie.contains("Max-Age=1800"));
+        assertTrue(cookie.contains("HttpOnly"));
+        assertTrue(cookie.contains("SameSite=Lax"));
+        assertTrue(cookie.contains("Path=/"));
+        assertFalse(cookie.contains("Secure"));               // http local
+    }
+
+    @Test
+    @DisplayName("em https (Railway) o cookie sai marcado como Secure")
+    void trustCookieSecureOnHttps() {
+        request.setSecure(true);
+        session.setAttribute("pendingMfaToken", "m");
+        when(auth.verifyMfa("m", "123456")).thenReturn(fullWithTrust("students"));
+        controller.verifyMfa("123456", session, request, response, flash);
+        assertTrue(response.getHeader("Set-Cookie").contains("Secure"));
+    }
+
+    @Test
+    @DisplayName("código errado ou resposta sem token de confiança: nenhum cookie é gravado")
+    void noCookieWithoutTrustToken() {
+        session.setAttribute("pendingMfaToken", "m");
+        when(auth.verifyMfa("m", "000000")).thenThrow(BackendErrors.status(401, "Código inválido."));
+        controller.verifyMfa("000000", session, request, response, flash);
+        assertNull(response.getHeader("Set-Cookie"));
+
+        session.setAttribute("pendingMfaToken", "m");
+        when(auth.verifyMfa("m", "123456")).thenReturn(full("students"));
+        controller.verifyMfa("123456", session, request, response, flash);
+        assertNull(response.getHeader("Set-Cookie"));
+    }
+
+    @Test
+    @DisplayName("login com o cookie válido: o backend pula o MFA e a sessão abre direto")
+    void loginWithTrustCookieSkipsMfa() {
+        when(auth.login("maria", "Senha123", "confianca")).thenReturn(full("students"));
+
+        assertEquals("redirect:/acervo/consulta",
+                controller.login("maria", "Senha123", "confianca", session, request, response, flash));
+
+        assertEquals("jwt", session.getAttribute("jwt"));
+        assertNull(session.getAttribute("pendingMfaToken"));
+        assertNull(response.getHeader("Set-Cookie"));         // cookie continua o mesmo (não renova)
+    }
+
+    @Test
+    @DisplayName("login com cookie que não vale mais: pede o código e apaga o cookie")
+    void loginWithStaleTrustCookieAsksMfaAndClearsIt() {
+        when(auth.login("maria", "Senha123", "vencido")).thenReturn(mfaChallenge());
+
+        assertEquals("redirect:/mfa", controller.login("maria", "Senha123", "vencido", session, request, response, flash));
+
+        String cookie = response.getHeader("Set-Cookie");
+        assertTrue(cookie.startsWith(LoginController.MFA_TRUST_COOKIE + "="));
+        assertTrue(cookie.contains("Max-Age=0"));
+    }
+
+    @Test
+    @DisplayName("login sem cookie que cai no MFA: não mexe em cookie nenhum")
+    void loginWithoutCookieAsksMfa() {
+        when(auth.login("maria", "Senha123", null)).thenReturn(mfaChallenge());
+        assertEquals("redirect:/mfa", controller.login("maria", "Senha123", null, session, request, response, flash));
+        assertNull(response.getHeader("Set-Cookie"));
+    }
+
+    @Test
+    @DisplayName("primeiro acesso concluído: grava o cookie novo (a senha trocada invalidou o antigo)")
+    void firstAccessStoresTrustCookie() {
+        session.setAttribute("pendingPasswordChangeToken", "p");
+        when(auth.completeFirstAccess("p", "NovaSenha1")).thenReturn(fullWithTrust("students"));
+        controller.firstAccess("NovaSenha1", "NovaSenha1", session, request, response, flash);
+        assertTrue(response.getHeader("Set-Cookie").startsWith(LoginController.MFA_TRUST_COOKIE + "=confianca"));
+    }
+
+    @Test
+    @DisplayName("sair não apaga o cookie: entrar de novo em até 30 min não pede o código")
+    void logoutKeepsTrustCookie() {
+        MockHttpServletRequest withSession = new MockHttpServletRequest();
+        withSession.setSession(session);
+        controller.logout(withSession);
+        assertTrue(session.isInvalid());
     }
 }

@@ -156,7 +156,7 @@ class ArchiveControllersTest {
     @Test
     @DisplayName("departamentos: nenhum cadastrado")
     void departmentsEmpty() {
-        when(backend.listDepart()).thenReturn(List.of());
+        when(backend.publicDepartments()).thenReturn(List.of());
         assertEquals("pages/departamentos", new DepartmentController(backend).list(null, model));
         assertNull(model.get("departamento"));
         assertEquals(List.of(), model.get("locais"));
@@ -165,8 +165,8 @@ class ArchiveControllersTest {
     @Test
     @DisplayName("departamentos: em ordem de código, com anterior/próximo e só as localizações do escolhido")
     void departmentsNavigation() {
-        when(backend.listDepart()).thenReturn(List.of(depart("C"), depart("a"), depart("B")));
-        when(backend.listLocal()).thenReturn(List.of(local("L2", "B"), local("L1", "B"), local("X", "C")));
+        when(backend.publicDepartments()).thenReturn(List.of(depart("C"), depart("a"), depart("B")));
+        when(backend.publicLocations()).thenReturn(List.of(local("L2", "B"), local("L1", "B"), local("X", "C")));
         DepartmentController c = new DepartmentController(backend);
 
         c.list(" b ", model);
@@ -214,19 +214,19 @@ class ArchiveControllersTest {
     void locationPages() {
         LocationController c = new LocationController(backend);
         assertEquals("redirect:/acervo/departamentos", c.list());
-        when(backend.getLocal("L1")).thenReturn(local("L1", "BIB"));
+        when(backend.publicLocal("L1")).thenReturn(local("L1", "BIB"));
         assertEquals("redirect:/acervo/departamentos?d=BIB", c.detailPage("L1"));
-        when(backend.getLocal("L9")).thenThrow(BackendErrors.status(404));
+        when(backend.publicLocal("L9")).thenThrow(BackendErrors.status(404));
         assertEquals("redirect:/acervo/departamentos", c.detailPage("L9"));
 
-        when(backend.getDepart("BIB")).thenReturn(depart("BIB"));
-        when(backend.localBooksStock("L1")).thenReturn(List.of(new LocationBookStock("111", "L", "A", null, 3, 2, 1, 0)));
+        when(backend.publicDepart("BIB")).thenReturn(depart("BIB"));
+        when(backend.publicLocalBooks("L1")).thenReturn(List.of(new LocationBookStock("111", "L", "A", null, 3, 2, 1, 0)));
         assertEquals("pages/localizacao-parcial", c.details("L1", model));
         assertEquals("Dep BIB", ((Department) model.get("departamento")).getDepartName());
 
-        when(backend.getLocal("L2")).thenReturn(local("L2", "ZZ"));
-        when(backend.getDepart("ZZ")).thenThrow(BackendErrors.offline());
-        when(backend.localBooksStock("L2")).thenReturn(null);
+        when(backend.publicLocal("L2")).thenReturn(local("L2", "ZZ"));
+        when(backend.publicDepart("ZZ")).thenThrow(BackendErrors.offline());
+        when(backend.publicLocalBooks("L2")).thenReturn(null);
         c.details("L2", model);
         assertNull(model.get("departamento"));
         assertEquals(List.of(), model.get("livros"));

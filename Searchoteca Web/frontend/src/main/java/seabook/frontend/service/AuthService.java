@@ -10,6 +10,7 @@ import seabook.frontend.dto.MfaVerifyRequest;
 import seabook.frontend.dto.TermsAcceptRequest;
 import seabook.frontend.dto.auth.FirstAccessRequest;
 import seabook.frontend.dto.auth.ForgotPasswordRequest;
+import seabook.frontend.dto.auth.ReactivationRequest;
 import seabook.frontend.dto.auth.ResetPasswordRequest;
 
 @Service
@@ -23,9 +24,17 @@ public class AuthService {
 
     /** Etapa 1: usuario + senha. Pode devolver termos pendentes, desafio de MFA, troca de senha ou o token. */
     public AuthResult login(String username, String password) {
+        return login(username, password, null);
+    }
+
+    /**
+     * Etapa 1 com o navegador lembrado: se o mfaTrustToken (cookie) ainda valer para este usuário,
+     * o backend pula o MFA e já devolve o token (ou a troca de senha).
+     */
+    public AuthResult login(String username, String password, String mfaTrustToken) {
         return restClient.post()
                 .uri("/api/auth/login")
-                .body(new LoginRequest(username, password))
+                .body(new LoginRequest(username, password, mfaTrustToken))
                 .retrieve()
                 .body(AuthResult.class);
     }
@@ -79,6 +88,19 @@ public class AuthService {
         restClient.post()
                 .uri("/api/auth/senha/redefinir")
                 .body(new ResetPasswordRequest(login, code, newPassword))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    /**
+     * Pedido de reativação de conta desativada (aluno). O backend responde sempre igual (202),
+     * exista a conta ou não e com a senha certa ou não: não revela quem está cadastrado.
+     */
+    public void requestReactivation(String username, String password, String reason) {
+        restClient.post()
+                .uri("/api/auth/reativacao")
+                .body(new ReactivationRequest(username == null ? null : username.trim(), password,
+                        reason == null || reason.isBlank() ? null : reason.trim()))
                 .retrieve()
                 .toBodilessEntity();
     }

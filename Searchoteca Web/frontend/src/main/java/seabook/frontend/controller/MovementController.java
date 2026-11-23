@@ -35,8 +35,9 @@ import java.util.Map;
  *    por livro, QUANTOS exemplares saem (no máximo o que está na estante). O backend escolhe QUAIS
  *    e devolve os números ("Dom Casmurro — cópias 4 e 3 movimentadas").
  *
- * As duas terminam na lista de exemplares movimentados (com os códigos novos e a impressão das etiquetas),
- * a mesma tela da entrada e da reimpressão (CopyController, modo=movimentacao).
+ * As duas terminam na lista de exemplares movimentados, a mesma tela da entrada e da reimpressão
+ * (CopyController, modo=movimentacao), mas sem impressão: o código do exemplar (ISBN + número)
+ * não muda com a localização, então a etiqueta colada no livro continua valendo.
  */
 @Controller
 public class MovementController {
@@ -186,7 +187,7 @@ public class MovementController {
 
             flash.addFlashAttribute("info", result.moved() + (result.moved() == 1
                     ? " exemplar movimentado de " : " exemplares movimentados de ")
-                    + code + " para " + result.toLocalCode() + ". Os códigos novos estão na lista abaixo.");
+                    + code + " para " + result.toLocalCode() + ". As etiquetas continuam as mesmas.");
             if (moved.isEmpty()) return "redirect:" + BATCH;
             return "redirect:" + Pages.url(LABELS, "modo", "movimentacao", "codigos", String.join(",", moved),
                     "de", code, "tipo", "lote");
